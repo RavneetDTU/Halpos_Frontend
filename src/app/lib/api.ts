@@ -1,8 +1,12 @@
-// ─── API Client ───────────────────────────────────────────────────────────────
-// Centralised fetch wrapper for the HALPOS backend.
-// Base URL: adjust via the VITE_API_BASE_URL env variable if needed.
-
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) ?? "";
+// ─── Base URL resolution ──────────────────────────────────────────────────────
+// On HTTPS (Vercel production) browsers block HTTP backend calls (mixed content).
+// vercel.json rewrites /api/* → http://103.55.104.142:5022/* server-side,
+// so we use the /api proxy path when served over HTTPS.
+// On plain HTTP (local dev) we use the direct backend URL from .env.
+const isDev = window.location.protocol === "http:";
+const BASE_URL = isDev
+  ? ((import.meta.env.VITE_API_BASE_URL as string) ?? "")
+  : "/api";
 
 const TOKEN_KEY = "hal_pos_token";
 
