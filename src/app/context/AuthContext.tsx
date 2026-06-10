@@ -1,78 +1,144 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { apiFetch, saveToken, getToken, clearToken } from "../lib/api";
 
-type Role = "admin" | "user";
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-interface User {
+export type Role = "admin" | "user";
+
+export interface User {
   id: number;
+  username: string;
   name: string;
   email: string;
   initials: string;
   role: Role;
+  warehouse: string | null;
+  created_at: string;
+}
+
+// ─── API response shapes ───────────────────────────────────────────────────────
+
+interface LoginResponse {
+  access_token: string;
+  token_type: string;
+}
+
+export interface RegisterPayload {
+  username: string;
+  email: string;
+  password: string;
   warehouse: string;
 }
+
+interface UserResponse {
+  id: number;
+  username: string;
+  email: string;
+  role: Role;
+  warehouse: string | null;
+  created_at: string;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Derive display-friendly fields from a raw backend user object */
+function toUser(u: UserResponse): User {
+  const parts = u.username.trim().split(/\s+/);
+  const initials =
+    parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : u.username.slice(0, 2).toUpperCase();
+
+  return {
+    id: u.id,
+    username: u.username,
+    name: u.username,
+    email: u.email,
+    role: u.role,
+    warehouse: u.warehouse,
+    initials,
+    created_at: u.created_at,
+  };
+}
+
+/**
+ * Decode a JWT payload without signature verification.
+ * Used client-side to read user claims from the access token.
+ */
+function decodeJWT(token: string): Record<string, unknown> {
+  try {
+    // JWT = header.payload.signature — decode the middle part
+    const base64 = token.split(".")[1]
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+    return JSON.parse(atob(base64));
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Build a User object from a JWT access token.
+ * The backend embeds sub (username), id, email, role, warehouse in the JWT payload.
+ */
+function userFromToken(token: string): User {
+  const p = decodeJWT(token);
+
+  const username = (p.sub as string) ?? (p.username as string) ?? "User";
+  const parts = username.trim().split(/\s+/);
+  const initials =
+    parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : username.slice(0, 2).toUpperCase();
+
+  return {
+    id: (p.id as number) ?? (p.user_id as number) ?? 0,
+    username,
+    name: username,
+    email: (p.email as string) ?? "",
+    role: ((p.role as Role) ?? "user") as Role,
+    warehouse: (p.warehouse as string | null) ?? null,
+    initials,
+    created_at: (p.created_at as string) ?? new Date().toISOString(),
+  };
+}
+
+/**
+ * Try to fetch a fresh user profile from /auth/me (optional endpoint).
+ * Falls back silently — if the endpoint doesn't exist we just use the JWT data.
+ */
+async function tryFetchMe(): Promise<User | null> {
+  try {
+    const raw = await apiFetch<UserResponse>("/auth/me");
+    return toUser(raw);
+  } catch {
+    return null;
+  }
+}
+
+// ─── Context ──────────────────────────────────────────────────────────────────
 
 interface AuthContextType {
   user: User | null;
   isAdmin: boolean;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (payload: RegisterPayload) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  updateUserRole: (
+    userId: number,
+    role: Role,
+    warehouse: string | null
+  ) => Promise<{ success: boolean; error?: string }>;
+  fetchUsers: () => Promise<User[]>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// ─── Simulated backend user store ─────────────────────────────────────────────
-// Replace this with a real API call to your backend (e.g. fetch('/api/auth/login'))
-const MOCK_USERS: Array<User & { password: string }> = [
-  {
-    id: 1,
-    name: "Joshua Blatter",
-    email: "admin@hearingaidlab.co.za",
-    password: "admin123",
-    initials: "JB",
-    role: "admin",
-    warehouse: "HEAD OFFICE",
-  },
-  {
-    id: 2,
-    name: "Emily Davis",
-    email: "emily@hearingaidlab.co.za",
-    password: "user123",
-    initials: "ED",
-    role: "user",
-    warehouse: "BRANCH 1",
-  },
-  {
-    id: 3,
-    name: "Robert Lee",
-    email: "robert@hearingaidlab.co.za",
-    password: "user123",
-    initials: "RL",
-    role: "user",
-    warehouse: "BRANCH 2",
-  },
-];
-
-// Simulate a backend login API call
-async function apiLogin(email: string, password: string): Promise<User> {
-  // Simulate network latency
-  await new Promise((res) => setTimeout(res, 800));
-
-  const found = MOCK_USERS.find(
-    (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-  );
-
-  if (!found) {
-    throw new Error("Invalid email or password. Please try again.");
-  }
-
-  // Return only the safe user fields (no password)
-  const { password: _pw, ...safeUser } = found;
-  return safeUser;
-}
-
 const SESSION_KEY = "hal_pos_user";
+
+// ─── Provider ────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -80,32 +146,137 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Restore session from localStorage on mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(SESSION_KEY);
-      if (stored) {
-        setUser(JSON.parse(stored));
+    const init = async () => {
+      try {
+        const stored = localStorage.getItem(SESSION_KEY);
+        const token = getToken();
+
+        if (stored && token) {
+          // Immediately restore from localStorage so the app is interactive
+          setUser(JSON.parse(stored));
+
+          // Optionally refresh from /auth/me in background (no-op if not available)
+          const fresh = await tryFetchMe();
+          if (fresh) {
+            setUser(fresh);
+            localStorage.setItem(SESSION_KEY, JSON.stringify(fresh));
+          }
+        }
+      } catch {
+        // Corrupt localStorage — clean up
+        clearToken();
+        localStorage.removeItem(SESSION_KEY);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-    } catch {
-      localStorage.removeItem(SESSION_KEY);
-    } finally {
-      setIsLoading(false);
-    }
+    };
+
+    init();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  // ── Login ──────────────────────────────────────────────────────────────────
+
+  const login = async (
+    username: string,
+    password: string
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
-      const loggedInUser = await apiLogin(email, password);
+      const baseUrl = (import.meta.env.VITE_API_BASE_URL as string) ?? "";
+      const res = await fetch(`${baseUrl}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (!res.ok) {
+        let message = "Invalid credentials. Please try again.";
+        try {
+          const body = await res.json();
+          const detail = body?.detail ?? body?.message;
+          if (Array.isArray(detail)) {
+            message = detail
+              .map((d: { msg?: string; loc?: string[] }) => {
+                const field = d.loc ? d.loc[d.loc.length - 1] : "";
+                return field ? `${field}: ${d.msg}` : (d.msg ?? "Validation error");
+              })
+              .join(" · ");
+          } else if (typeof detail === "string") {
+            message = detail;
+          }
+        } catch { /* ignore */ }
+        return { success: false, error: message };
+      }
+
+      const data: LoginResponse = await res.json();
+      saveToken(data.access_token);
+
+      // Primary: decode user info directly from the JWT (no extra round-trip)
+      let loggedInUser = userFromToken(data.access_token);
+
+      // Enhancement: try /auth/me to get richer data (e.g. email, warehouse)
+      const fresh = await tryFetchMe();
+      if (fresh) loggedInUser = fresh;
+
       setUser(loggedInUser);
       localStorage.setItem(SESSION_KEY, JSON.stringify(loggedInUser));
+
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message ?? "Login failed" };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Login failed";
+      return { success: false, error: message };
     }
   };
 
+  // ── Register ───────────────────────────────────────────────────────────────
+
+  const register = async (
+    payload: RegisterPayload
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      await apiFetch<UserResponse>("/auth/register", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      return { success: true };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Registration failed";
+      return { success: false, error: message };
+    }
+  };
+
+  // ── Logout ─────────────────────────────────────────────────────────────────
+
   const logout = () => {
     setUser(null);
+    clearToken();
     localStorage.removeItem(SESSION_KEY);
+  };
+
+  // ── Admin: Update User Role ────────────────────────────────────────────────
+
+  const updateUserRole = async (
+    userId: number,
+    role: Role,
+    warehouse: string | null
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      await apiFetch<UserResponse>(`/auth/users/${userId}/role`, {
+        method: "PATCH",
+        body: JSON.stringify({ role, warehouse }),
+      });
+      return { success: true };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Update failed";
+      return { success: false, error: message };
+    }
+  };
+
+  // ── Admin: Fetch All Users ─────────────────────────────────────────────────
+
+  const fetchUsers = async (): Promise<User[]> => {
+    const raw = await apiFetch<UserResponse[]>("/auth/users");
+    return raw.map(toUser);
   };
 
   return (
@@ -116,7 +287,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         isLoading,
         login,
+        register,
         logout,
+        updateUserRole,
+        fetchUsers,
       }}
     >
       {children}

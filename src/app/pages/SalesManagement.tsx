@@ -1,11 +1,10 @@
 import {
-  Download,
-  FileText,
-  Plus,
   Search,
-  MoreVertical,
   ChevronLeft,
   ChevronRight,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { KPICard } from "../components/ui/KPICard";
 import { StatusBadge } from "../components/ui/StatusBadge";
@@ -17,7 +16,7 @@ import {
   XCircle,
   Users,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ViewPaymentModal } from "../components/modals/ViewPaymentModal";
 import { AddPaymentModal } from "../components/modals/AddPaymentModal";
 import { ViewDetailsModal } from "../components/modals/ViewDetailsModal";
@@ -27,6 +26,26 @@ import { AddDeliveryModal } from "../components/modals/AddDeliveryModal";
 import { ProposeRefundModal } from "../components/modals/ProposeRefundModal";
 import { DeleteConfirmModal } from "../components/modals/DeleteConfirmModal";
 import { NotWorking } from "./NotWorking";
+import { apiFetch } from "../lib/api";
+
+// ─── API type (matches GET /sales response shape) ────────────────────────────
+interface SaleRecord {
+  id: number;
+  date: string;
+  reference?: string;
+  biller?: string;
+  customerName?: string;
+  customerSurname?: string;
+  customerPhone?: string;
+  source?: string;
+  saleStatus?: string;
+  grandTotal?: number | string;
+  paid?: number | string;
+  balance?: number | string;
+  paymentStatus?: string;
+  warehouse?: string;
+  [key: string]: unknown;
+}
 
 const kpiData = [
   {
@@ -79,83 +98,7 @@ const kpiData = [
   },
 ];
 
-const salesData = [
-  {
-    id: 1,
-    date: "2026-05-10",
-    reference: "SAL-2026-001234",
-    biller: "John Smith",
-    customerName: "Sarah",
-    customerPhone: "+1 234-567-8901",
-    customerSurname: "Johnson",
-    source: "Google Ads",
-    saleStatus: "Completed",
-    grandTotal: "$2,450.00",
-    paid: "$2,450.00",
-    balance: "$0.00",
-    paymentStatus: "Paid",
-  },
-  {
-    id: 2,
-    date: "2026-05-10",
-    reference: "SAL-2026-001235",
-    biller: "Emily Davis",
-    customerName: "Michael",
-    customerPhone: "+1 234-567-8902",
-    customerSurname: "Brown",
-    source: "Facebook",
-    saleStatus: "Pending",
-    grandTotal: "$1,890.00",
-    paid: "$945.00",
-    balance: "$945.00",
-    paymentStatus: "Partial",
-  },
-  {
-    id: 3,
-    date: "2026-05-09",
-    reference: "SAL-2026-001236",
-    biller: "John Smith",
-    customerName: "Emma",
-    customerPhone: "+1 234-567-8903",
-    customerSurname: "Wilson",
-    source: "Direct",
-    saleStatus: "Completed",
-    grandTotal: "$3,200.00",
-    paid: "$3,200.00",
-    balance: "$0.00",
-    paymentStatus: "Paid",
-  },
-  {
-    id: 4,
-    date: "2026-05-09",
-    reference: "SAL-2026-001237",
-    biller: "Robert Lee",
-    customerName: "James",
-    customerPhone: "+1 234-567-8904",
-    customerSurname: "Taylor",
-    source: "Referral",
-    saleStatus: "Cancelled",
-    grandTotal: "$1,650.00",
-    paid: "$0.00",
-    balance: "$1,650.00",
-    paymentStatus: "Pending",
-  },
-  {
-    id: 5,
-    date: "2026-05-08",
-    reference: "SAL-2026-001238",
-    biller: "Emily Davis",
-    customerName: "Olivia",
-    customerPhone: "+1 234-567-8905",
-    customerSurname: "Martinez",
-    source: "Google Ads",
-    saleStatus: "Refunded",
-    grandTotal: "$2,100.00",
-    paid: "$2,100.00",
-    balance: "-$2,100.00",
-    paymentStatus: "Refunded",
-  },
-];
+// salesData is now loaded from the API — see useSalesData hook below
 
 function getStatusVariant(
   status: string,
@@ -178,13 +121,63 @@ function getStatusVariant(
 const warehouseOptions = ["All Warehouses", "HEAD OFFICE", "BRANCH 1", "BRANCH 2"];
 
 export function SalesManagement() {
-  const [selectedRows, setSelectedRows] = useState<number[]>(
-    [],
-  );
-  const [openActionMenu, setOpenActionMenu] = useState<
-    number | null
-  >(null);
+  // ── API data ──────────────────────────────────────────────────────────────
+  const [salesData, setSalesData] = useState<SaleRecord[]>([]);
+  const [isLoadingSales, setIsLoadingSales] = useState(true);
+  const [salesError, setSalesError] = useState("");
+
+  const loadSales = useCallback(async () => {
+    setIsLoadingSales(true);
+    setSalesError("");
+    try {
+      // The backend may return a plain array OR a wrapper object.
+      // Log the raw response so we can see the exact shape.
+      const raw = await apiFetch<unknown>("/sales");
+      console.log("[GET /sales] raw response:", raw);
+
+      // Extract the array from whichever shape the API returns
+      let records: SaleRecord[] = [];
+      if (Array.isArray(raw)) {
+        records = raw as SaleRecord[];
+      } else if (raw && typeof raw === "object") {
+        // Common FastAPI wrapper shapes: { data }, { items }, { sales }, { results }
+        const obj = raw as Record<string, unknown>;
+        const candidate =
+          obj.data ?? obj.items ?? obj.sales ?? obj.results ?? obj.records;
+        if (Array.isArray(candidate)) {
+          records = candidate as SaleRecord[];
+        }
+      }
+
+      setSalesData(records);
+    } catch (err: unknown) {
+      setSalesError(err instanceof Error ? err.message : "Failed to load sales");
+    } finally {
+      setIsLoadingSales(false);
+    }
+  }, []);
+
+  useEffect(() => { loadSales(); }, [loadSales]);
+
+  // ── Table state ───────────────────────────────────────────────────────────
+  const [selectedRows, setSelectedRows] = useState<number[]>([]);
+  const [openActionMenu, setOpenActionMenu] = useState<number | null>(null);
   const [warehouseFilter, setWarehouseFilter] = useState("All Warehouses");
+  const [search, setSearch] = useState("");
+
+  // Client-side filter (warehouse + search)
+  const filteredSales = salesData.filter((s) => {
+    const matchWarehouse =
+      warehouseFilter === "All Warehouses" || s.warehouse === warehouseFilter;
+    const q = search.toLowerCase();
+    const matchSearch =
+      !q ||
+      (s.customerName ?? "").toLowerCase().includes(q) ||
+      (s.customerSurname ?? "").toLowerCase().includes(q) ||
+      (s.reference ?? "").toLowerCase().includes(q) ||
+      (s.biller ?? "").toLowerCase().includes(q);
+    return matchWarehouse && matchSearch;
+  });
   const [viewPaymentModal, setViewPaymentModal] = useState<{
     isOpen: boolean;
     saleData: any;
@@ -227,9 +220,9 @@ export function SalesManagement() {
 
   const toggleAll = () => {
     setSelectedRows((prev) =>
-      prev.length === salesData.length
+      prev.length === filteredSales.length
         ? []
-        : salesData.map((row) => row.id),
+        : filteredSales.map((row) => row.id),
     );
   };
 
@@ -404,14 +397,21 @@ export function SalesManagement() {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={loadSales}
+              disabled={isLoadingSales}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded text-sm text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw size={14} className={isLoadingSales ? "animate-spin" : ""} />
+              Refresh
+            </button>
             <div className="relative">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                size={16}
-              />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input
                 type="text"
                 placeholder="Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="pl-9 pr-3 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm w-64"
               />
             </div>
@@ -439,9 +439,6 @@ export function SalesManagement() {
                 </th>
                 <th className="px-3 py-2 text-left text-xs font-medium">
                   Biller
-                </th>
-                <th className="px-3 py-2 text-left text-xs font-medium">
-                  Customer Surname
                 </th>
                 <th className="px-3 py-2 text-left text-xs font-medium">
                   Customer Phone
@@ -473,7 +470,38 @@ export function SalesManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {salesData.map((sale, index) => (
+              {/* Loading state */}
+              {isLoadingSales && (
+                <tr>
+                  <td colSpan={13} className="px-4 py-16 text-center">
+                    <div className="flex items-center justify-center gap-2 text-gray-500 text-sm">
+                      <Loader2 size={18} className="animate-spin text-blue-500" />
+                      Loading sales…
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {/* Error state */}
+              {!isLoadingSales && salesError && (
+                <tr>
+                  <td colSpan={13} className="px-4 py-16 text-center">
+                    <div className="flex items-center justify-center gap-2 text-red-500 text-sm">
+                      <AlertCircle size={16} />
+                      {salesError}
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {/* Empty state */}
+              {!isLoadingSales && !salesError && filteredSales.length === 0 && (
+                <tr>
+                  <td colSpan={14} className="px-4 py-16 text-center text-gray-400 text-sm">
+                    No sales found
+                  </td>
+                </tr>
+              )}
+              {/* Data rows */}
+              {!isLoadingSales && !salesError && filteredSales.map((sale, index) => (
                 <tr
                   key={sale.id}
                   className={`hover:bg-gray-100 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
@@ -487,7 +515,13 @@ export function SalesManagement() {
                     />
                   </td>
                   <td className="px-3 py-3 text-xs text-gray-900">
-                    {sale.date}
+                    {sale.date
+                      ? (() => {
+                          const d = new Date(sale.date);
+                          const pad = (n: number) => String(n).padStart(2, "0");
+                          return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+                        })()
+                      : ""}
                   </td>
                   <td className="px-3 py-3 text-xs font-medium text-blue-600">
                     {sale.reference}
@@ -495,9 +529,7 @@ export function SalesManagement() {
                   <td className="px-3 py-3 text-xs text-gray-900">
                     {sale.biller}
                   </td>
-                  <td className="px-3 py-3 text-xs text-gray-900">
-                    {sale.customerSurname}
-                  </td>
+
                   <td className="px-3 py-3 text-xs text-gray-600">
                     {sale.customerPhone}
                   </td>
@@ -509,27 +541,23 @@ export function SalesManagement() {
                   </td>
                   <td className="px-3 py-3">
                     <StatusBadge
-                      status={sale.saleStatus}
-                      variant={getStatusVariant(
-                        sale.saleStatus,
-                      )}
+                      status={sale.saleStatus ?? ""}
+                      variant={getStatusVariant(sale.saleStatus ?? "")}
                     />
                   </td>
                   <td className="px-3 py-3 text-xs font-medium text-gray-900">
-                    {sale.grandTotal}
+                    {sale.grandTotal != null ? Number(sale.grandTotal).toLocaleString("en-ZA", { minimumFractionDigits: 2 }) : "—"}
                   </td>
                   <td className="px-3 py-3 text-xs text-gray-900">
-                    {sale.paid}
+                    {sale.paid != null ? Number(sale.paid).toLocaleString("en-ZA", { minimumFractionDigits: 2 }) : "—"}
                   </td>
                   <td className="px-3 py-3 text-xs text-gray-900">
-                    {sale.balance}
+                    {sale.balance != null ? Number(sale.balance).toLocaleString("en-ZA", { minimumFractionDigits: 2 }) : "—"}
                   </td>
                   <td className="px-3 py-3">
                     <StatusBadge
-                      status={sale.paymentStatus}
-                      variant={getStatusVariant(
-                        sale.paymentStatus,
-                      )}
+                      status={sale.paymentStatus ?? ""}
+                      variant={getStatusVariant(sale.paymentStatus ?? "")}
                     />
                   </td>
                   <td className="relative px-3 py-3 overflow-visible">
@@ -633,9 +661,8 @@ export function SalesManagement() {
         </div>
         <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between bg-gray-50">
           <div className="text-sm text-gray-600">
-            Showing <span className="font-medium">1</span> to{" "}
-            <span className="font-medium">5</span> of{" "}
-            <span className="font-medium">1,284</span> results
+            Showing <span className="font-medium">{filteredSales.length}</span> of{" "}
+            <span className="font-medium">{salesData.length}</span> results
           </div>
           <div className="flex items-center gap-2">
             <button className="px-3 py-1.5 border border-gray-200 rounded hover:bg-white transition-colors disabled:opacity-50 text-sm">

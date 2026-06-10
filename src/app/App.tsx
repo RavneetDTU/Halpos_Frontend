@@ -22,6 +22,7 @@ import { InvoicePage } from "./pages/invoice/InvoicePage";
 import { AddProduct } from "./pages/products/AddProduct";
 import { ListProducts } from "./pages/products/ListProducts";
 import { WarehouseSettings } from "./pages/settings/WarehouseSettings";
+import { UserManagement } from "./pages/settings/UserManagement";
 
 // ─── Protected layout wrapper ─────────────────────────────────────────────────
 function ProtectedLayout() {
@@ -153,8 +154,11 @@ export default function App() {
 
             {/* Settings */}
             <Route path="/settings/general" element={<UpcomingFeature />} />
-            <Route path="/settings/users" element={<UpcomingFeature />} />
             <Route path="/settings/warehouse" element={<WarehouseSettings />} />
+            {/* Admin-only settings */}
+            <Route element={<AdminOnly />}>
+              <Route path="/settings/users" element={<UserManagement />} />
+            </Route>
 
             {/* Reports */}
             <Route path="/reports/sales" element={<UpcomingFeature />} />
