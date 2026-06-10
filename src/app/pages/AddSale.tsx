@@ -41,6 +41,7 @@ export function AddSale() {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 16));
   const [warehouse, setWarehouse] = useState(user?.warehouse ?? WAREHOUSES[0]);
   const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [biller, setBiller] = useState(user?.username ?? "");
   const [paidBy, setPaidBy] = useState("Cash");
   const [discount, setDiscount] = useState(0);
@@ -205,6 +206,7 @@ export function AddSale() {
       date: new Date(date).toISOString(),
       warehouse,
       customerName: customerName.trim(),
+      customerPhone: customerPhone.trim() || null,
       biller: biller.trim(),
       paidBy,
       discount,
@@ -241,6 +243,7 @@ export function AddSale() {
     setOrderItems([]);
     setBackorderNotes("");
     setCustomerName("");
+    setCustomerPhone("");
     setDiscount(0);
     setSubmitError("");
     setSubmitSuccess(false);
@@ -321,8 +324,8 @@ export function AddSale() {
             </div>
           </div>
 
-          {/* ── Row 2: Warehouse / Customer ── */}
-          <div className="grid grid-cols-2 gap-4 mb-5">
+          {/* ── Row 2: Warehouse / Customer / Customer Phone ── */}
+          <div className="grid grid-cols-3 gap-4 mb-5">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Warehouse *</label>
               <select
@@ -340,6 +343,16 @@ export function AddSale() {
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 placeholder="e.g. John Doe"
+                className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Customer Phone</label>
+              <input
+                type="text"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                placeholder="e.g. 082 123 4567"
                 className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>

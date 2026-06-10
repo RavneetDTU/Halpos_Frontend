@@ -84,6 +84,42 @@ export function ViewDetailsModal({ isOpen, onClose, saleData }: ViewDetailsModal
     window.open(`/invoice/1?type=${type}`, "_blank");
   };
 
+  // Check if it's a purchase record or a sale record
+  const isPurchase = saleData && ("supplier" in saleData || "supplierPhone" in saleData);
+  const contactLabel = isPurchase ? "Supplier Info" : "Bill To";
+  
+  const contactName = isPurchase
+    ? (saleData?.supplier || "—")
+    : (saleData?.customerName || saleDetails.customer.name);
+    
+  const contactPhone = isPurchase
+    ? (saleData?.supplierPhone || "—")
+    : (saleData?.customerPhone || saleDetails.customer.phone);
+
+  const contactAddress = isPurchase ? "" : saleDetails.customer.address;
+  const contactCity = isPurchase ? "" : saleDetails.customer.city;
+  const contactEmail = isPurchase ? "" : saleDetails.customer.email;
+
+  const infoTitle = isPurchase ? "Purchase Info" : "Sale Info";
+  
+  const referenceValue = saleData?.reference || saleData?.ref || saleDetails.ref;
+  const dateValue = saleData?.date
+    ? (() => {
+        const d = new Date(saleData.date);
+        if (isNaN(d.getTime())) return saleData.date;
+        const pad = (n: number) => String(n).padStart(2, "0");
+        return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      })()
+    : saleDetails.date;
+  const warehouseValue = saleData?.warehouse || saleDetails.warehouse;
+  const billerValue = isPurchase ? "—" : (saleData?.biller || saleDetails.biller);
+
+  const statusValue = isPurchase
+    ? (saleData?.purchaseStatus || "Ordered")
+    : (saleData?.saleStatus || saleDetails.saleStatus);
+
+  const paymentStatusValue = saleData?.paymentStatus || saleDetails.paymentStatus;
+
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[92vh] overflow-hidden flex flex-col shadow-2xl">
@@ -91,19 +127,19 @@ export function ViewDetailsModal({ isOpen, onClose, saleData }: ViewDetailsModal
         {/* Modal Header */}
         <div className="bg-[#1a1d29] text-white px-6 py-4 flex items-center justify-between flex-shrink-0">
           <div>
-            <h2 className="text-base font-semibold">Sale Details</h2>
-            <p className="text-xs text-blue-200 mt-0.5">{saleDetails.ref} • {saleDetails.date}</p>
+            <h2 className="text-base font-semibold">{isPurchase ? "Purchase Details" : "Sale Details"}</h2>
+            <p className="text-xs text-blue-200 mt-0.5">{referenceValue} • {dateValue}</p>
           </div>
           <div className="flex items-center gap-3">
             <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              saleDetails.saleStatus === "Completed" ? "bg-green-400/20 text-green-300 border border-green-400/30" : "bg-orange-400/20 text-orange-300 border border-orange-400/30"
+              ["completed", "received", "paid"].includes(statusValue.toLowerCase()) ? "bg-green-400/20 text-green-300 border border-green-400/30" : "bg-orange-400/20 text-orange-300 border border-orange-400/30"
             }`}>
-              {saleDetails.saleStatus}
+              {statusValue}
             </span>
             <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              saleDetails.paymentStatus === "Paid" ? "bg-blue-400/20 text-blue-300 border border-blue-400/30" : "bg-red-400/20 text-red-300 border border-red-400/30"
+              paymentStatusValue === "Paid" ? "bg-blue-400/20 text-blue-300 border border-blue-400/30" : "bg-red-400/20 text-red-300 border border-red-400/30"
             }`}>
-              {saleDetails.paymentStatus}
+              {paymentStatusValue}
             </span>
             <button onClick={onClose} className="text-white/60 hover:text-white transition-colors ml-2">
               <X size={20} />
@@ -126,21 +162,21 @@ export function ViewDetailsModal({ isOpen, onClose, saleData }: ViewDetailsModal
               <p className="text-xs text-gray-400 mt-1">VAT: {saleDetails.company.vatNo}</p>
             </div>
             <div className="p-5 border-r border-gray-100">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Bill To</p>
-              <p className="text-sm font-semibold text-gray-900">{saleDetails.customer.name}</p>
-              <p className="text-xs text-gray-500 mt-1">{saleDetails.customer.address}</p>
-              <p className="text-xs text-gray-500">{saleDetails.customer.city}</p>
-              <p className="text-xs text-gray-500">{saleDetails.customer.phone}</p>
-              <p className="text-xs text-gray-500">{saleDetails.customer.email}</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{contactLabel}</p>
+              <p className="text-sm font-semibold text-gray-900">{contactName}</p>
+              {contactAddress && <p className="text-xs text-gray-500 mt-1">{contactAddress}</p>}
+              {contactCity && <p className="text-xs text-gray-500">{contactCity}</p>}
+              {contactPhone && <p className="text-xs text-gray-500">{contactPhone}</p>}
+              {contactEmail && <p className="text-xs text-gray-500">{contactEmail}</p>}
             </div>
             <div className="p-5">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Sale Info</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{infoTitle}</p>
               <div className="space-y-1.5">
                 {[
-                  ["Reference", saleDetails.ref],
-                  ["Date", saleDetails.date],
-                  ["Warehouse", saleDetails.warehouse],
-                  ["Biller", saleDetails.biller],
+                  ["Reference", referenceValue],
+                  ["Date", dateValue],
+                  ["Warehouse", warehouseValue],
+                  ["Biller", billerValue],
                 ].map(([label, val]) => (
                   <div key={label} className="flex justify-between">
                     <span className="text-xs text-gray-500">{label}</span>
@@ -198,16 +234,20 @@ export function ViewDetailsModal({ isOpen, onClose, saleData }: ViewDetailsModal
                 ))}
                 <div className="pt-2 border-t border-gray-200 flex justify-between">
                   <span className="text-sm font-bold text-gray-900">Grand Total</span>
-                  <span className="text-base font-bold text-gray-900">R {saleDetails.grandTotal.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</span>
+                  <span className="text-base font-bold text-gray-900">
+                    R {saleData?.grandTotal != null ? Number(saleData.grandTotal).toLocaleString("en-ZA", { minimumFractionDigits: 2 }) : saleDetails.grandTotal.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-green-600">Paid</span>
-                  <span className="font-semibold text-green-700">R {saleDetails.paid.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}</span>
+                  <span className="font-semibold text-green-700">
+                    R {saleData?.paid != null ? Number(saleData.paid).toLocaleString("en-ZA", { minimumFractionDigits: 2 }) : saleDetails.paid.toLocaleString("en-ZA", { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm font-bold">
                   <span className="text-gray-900">Balance</span>
-                  <span className={saleDetails.balance === 0 ? "text-green-700" : "text-red-600"}>
-                    R {saleDetails.balance.toFixed(2)}
+                  <span className={(saleData?.balance != null ? Number(saleData.balance) : saleDetails.balance) === 0 ? "text-green-700" : "text-red-600"}>
+                    R {saleData?.balance != null ? Number(saleData.balance).toFixed(2) : saleDetails.balance.toFixed(2)}
                   </span>
                 </div>
               </div>

@@ -17,8 +17,10 @@ interface PurchaseRecord {
   date: string;
   reference?: string;
   supplier?: string;
+  supplierPhone?: string;
   warehouse?: string;
   purchaseStatus?: string;
+  status?: string;
   paymentStatus?: string;
   grandTotal?: number | string;
   paid?: number | string;
@@ -183,6 +185,7 @@ export function ListPurchases() {
                   <th className="px-3 py-2 text-left text-xs font-medium">Date</th>
                   <th className="px-3 py-2 text-left text-xs font-medium">Reference No</th>
                   <th className="px-3 py-2 text-left text-xs font-medium">Supplier</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium">Supplier Phone</th>
                   <th className="px-3 py-2 text-left text-xs font-medium">Warehouse</th>
                   <th className="px-3 py-2 text-left text-xs font-medium">Purchase Status</th>
                   <th className="px-3 py-2 text-left text-xs font-medium">Grand Total</th>
@@ -197,7 +200,7 @@ export function ListPurchases() {
                 {/* Loading */}
                 {isLoading && (
                   <tr>
-                    <td colSpan={11} className="px-4 py-16 text-center">
+                    <td colSpan={12} className="px-4 py-16 text-center">
                       <div className="flex items-center justify-center gap-2 text-gray-500 text-sm">
                         <Loader2 size={18} className="animate-spin text-blue-500" />
                         Loading purchases…
@@ -208,7 +211,7 @@ export function ListPurchases() {
                 {/* Error */}
                 {!isLoading && fetchError && (
                   <tr>
-                    <td colSpan={11} className="px-4 py-16 text-center">
+                    <td colSpan={12} className="px-4 py-16 text-center">
                       <div className="flex items-center justify-center gap-2 text-red-500 text-sm">
                         <AlertCircle size={16} />
                         {fetchError}
@@ -219,7 +222,7 @@ export function ListPurchases() {
                 {/* Empty */}
                 {!isLoading && !fetchError && filteredData.length === 0 && (
                   <tr>
-                    <td colSpan={11} className="px-4 py-16 text-center text-gray-400 text-sm">
+                    <td colSpan={12} className="px-4 py-16 text-center text-gray-400 text-sm">
                       No purchases found
                     </td>
                   </tr>
@@ -240,12 +243,15 @@ export function ListPurchases() {
                       {purchase.supplier ?? "—"}
                     </td>
                     <td className="px-3 py-2 text-xs text-gray-600">
+                      {purchase.supplierPhone ?? "—"}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-gray-600">
                       {purchase.warehouse ?? "—"}
                     </td>
                     <td className="px-3 py-2">
                       <StatusBadge
-                        status={purchase.purchaseStatus ?? ""}
-                        variant={getStatusVariant(purchase.purchaseStatus ?? "")}
+                        status={(purchase.status || purchase.purchaseStatus || "") as string}
+                        variant={getStatusVariant((purchase.status || purchase.purchaseStatus || "") as string)}
                       />
                     </td>
                     <td className="px-3 py-2 text-xs font-medium text-gray-900">

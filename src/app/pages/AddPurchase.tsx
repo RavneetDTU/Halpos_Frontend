@@ -35,6 +35,7 @@ export function AddPurchase() {
   // ── Header fields ──
   const [date, setDate] = useState(new Date().toISOString().slice(0, 16));
   const [supplier, setSupplier] = useState("");
+  const [supplierPhone, setSupplierPhone] = useState("");
   const [warehouse, setWarehouse] = useState(user?.warehouse ?? WAREHOUSES[0]);
   const [purchaseStatus, setPurchaseStatus] = useState("Ordered");
   const [paymentStatus, setPaymentStatus] = useState("Pending");
@@ -157,6 +158,7 @@ export function AddPurchase() {
     const payload = {
       date: new Date(date).toISOString(),
       supplier: supplier.trim(),
+      supplierPhone: supplierPhone.trim() || null,
       warehouse,
       purchaseStatus,
       paymentStatus,
@@ -188,6 +190,7 @@ export function AddPurchase() {
   const handleReset = () => {
     setOrderItems([]);
     setSupplier("");
+    setSupplierPhone("");
     setNotes("");
     setSubmitError("");
     setSubmitSuccess(false);
@@ -267,8 +270,8 @@ export function AddPurchase() {
             </div>
           </div>
 
-          {/* ── Row 2: Supplier / Notes ── */}
-          <div className="grid grid-cols-2 gap-4 mb-5">
+          {/* ── Row 2: Supplier / Supplier Phone / Notes ── */}
+          <div className="grid grid-cols-3 gap-4 mb-5">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Supplier *</label>
               <input
@@ -276,6 +279,16 @@ export function AddPurchase() {
                 value={supplier}
                 onChange={(e) => setSupplier(e.target.value)}
                 placeholder="e.g. Hearing Aid Labs - HEAD OFFICE"
+                className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Supplier Phone</label>
+              <input
+                type="text"
+                value={supplierPhone}
+                onChange={(e) => setSupplierPhone(e.target.value)}
+                placeholder="e.g. 082 123 4567"
                 className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
