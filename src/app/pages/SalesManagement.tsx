@@ -6,17 +6,8 @@ import {
   AlertCircle,
   RefreshCw,
 } from "lucide-react";
-import { KPICard } from "../components/ui/KPICard";
 import { StatusBadge } from "../components/ui/StatusBadge";
-import {
-  DollarSign,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Users,
-} from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ViewPaymentModal } from "../components/modals/ViewPaymentModal";
 import { AddPaymentModal } from "../components/modals/AddPaymentModal";
 import { ViewDetailsModal } from "../components/modals/ViewDetailsModal";
@@ -47,58 +38,6 @@ interface SaleRecord {
   [key: string]: unknown;
 }
 
-const kpiData = [
-  {
-    title: "Total Sales",
-    value: "1,284",
-    trend: { value: "+12.5%", isPositive: true },
-    icon: TrendingUp,
-    iconColor: "text-blue-600",
-    iconBg: "bg-blue-50",
-  },
-  {
-    title: "Revenue",
-    value: "$428,650",
-    trend: { value: "+8.2%", isPositive: true },
-    icon: DollarSign,
-    iconColor: "text-green-600",
-    iconBg: "bg-green-50",
-  },
-  {
-    title: "Pending Payments",
-    value: "$52,340",
-    trend: { value: "-3.1%", isPositive: true },
-    icon: Clock,
-    iconColor: "text-orange-600",
-    iconBg: "bg-orange-50",
-  },
-  {
-    title: "Completed Orders",
-    value: "1,089",
-    trend: { value: "+15.3%", isPositive: true },
-    icon: CheckCircle,
-    iconColor: "text-green-600",
-    iconBg: "bg-green-50",
-  },
-  {
-    title: "Refund Amount",
-    value: "$12,450",
-    trend: { value: "+2.4%", isPositive: false },
-    icon: XCircle,
-    iconColor: "text-red-600",
-    iconBg: "bg-red-50",
-  },
-  {
-    title: "Active Customers",
-    value: "842",
-    trend: { value: "+18.7%", isPositive: true },
-    icon: Users,
-    iconColor: "text-purple-600",
-    iconBg: "bg-purple-50",
-  },
-];
-
-// salesData is now loaded from the API — see useSalesData hook below
 
 function getStatusVariant(
   status: string,
@@ -118,66 +57,121 @@ function getStatusVariant(
   }
 }
 
-const warehouseOptions = ["All Warehouses", "HEAD OFFICE", "BRANCH 1", "BRANCH 2"];
+const warehouseOptions = [
+  "All Warehouses",
+  "HEAD OFFICE",
+  "BRANCH 1",
+  "BRANCH 2",
+  "BRANCH 3",
+  "BRANCH 4",
+];
 
 export function SalesManagement() {
-  // ── API data ──────────────────────────────────────────────────────────────
+  // ── API and Pagination data ──────────────────────────────────────────────
   const [salesData, setSalesData] = useState<SaleRecord[]>([]);
   const [isLoadingSales, setIsLoadingSales] = useState(true);
   const [salesError, setSalesError] = useState("");
+
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  // Track whether we've done the initial auto-jump to last page
+  const initialLoadDone = useRef(false);
+
+  const [warehouseFilter, setWarehouseFilter] = useState("All Warehouses");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce search input changes
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+      initialLoadDone.current = false; // re-enable auto-jump on new search
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search]);
 
   const loadSales = useCallback(async () => {
     setIsLoadingSales(true);
     setSalesError("");
     try {
-      // The backend may return a plain array OR a wrapper object.
-      // Log the raw response so we can see the exact shape.
-      const raw = await apiFetch<unknown>("/sales");
-      console.log("[GET /sales] raw response:", raw);
-
-      // Extract the array from whichever shape the API returns
-      let records: SaleRecord[] = [];
-      if (Array.isArray(raw)) {
-        records = raw as SaleRecord[];
-      } else if (raw && typeof raw === "object") {
-        // Common FastAPI wrapper shapes: { data }, { items }, { sales }, { results }
-        const obj = raw as Record<string, unknown>;
-        const candidate =
-          obj.data ?? obj.items ?? obj.sales ?? obj.results ?? obj.records;
-        if (Array.isArray(candidate)) {
-          records = candidate as SaleRecord[];
-        }
+      let url = `/sales?page=${page}&limit=${limit}`;
+      if (debouncedSearch.trim()) {
+        url += `&search=${encodeURIComponent(debouncedSearch.trim())}`;
+      }
+      if (warehouseFilter !== "All Warehouses") {
+        url += `&warehouse=${encodeURIComponent(warehouseFilter)}`;
       }
 
+      const raw = await apiFetch<unknown>(url);
+
+      let records: SaleRecord[] = [];
+      let total = 0;
+      let pages = 1;
+
+      if (raw && typeof raw === "object") {
+        const obj = raw as Record<string, unknown>;
+        const candidate =
+          obj.sales ?? obj.data ?? obj.items ?? obj.results ?? obj.records;
+        if (Array.isArray(candidate)) {
+          records = candidate as SaleRecord[];
+        } else if (Array.isArray(raw)) {
+          records = raw as SaleRecord[];
+        }
+
+        total = typeof obj.total === "number" ? obj.total : records.length;
+        pages = typeof obj.totalPages === "number" ? obj.totalPages : Math.ceil(total / limit);
+      } else if (Array.isArray(raw)) {
+        records = raw as SaleRecord[];
+        total = records.length;
+        pages = Math.ceil(total / limit);
+      }
+
+      // On first load (page 1, no search/filter), jump to the last page so newest
+      // sales (highest IDs) are immediately visible. The backend returns oldest-first.
+      if (!initialLoadDone.current && page === 1 && pages > 1 && !debouncedSearch.trim() && warehouseFilter === "All Warehouses") {
+        initialLoadDone.current = true;
+        setTotalRecords(total);
+        setTotalPages(pages);
+        setPage(pages); // triggers another fetch for the last page
+        setIsLoadingSales(false);
+        return;
+      }
+      initialLoadDone.current = true;
+
+      // Sort by ID descending so that the newest sales show at the top on the current page
+      records.sort((a, b) => b.id - a.id);
+
       setSalesData(records);
+      setTotalRecords(total);
+      setTotalPages(pages);
     } catch (err: unknown) {
       setSalesError(err instanceof Error ? err.message : "Failed to load sales");
     } finally {
       setIsLoadingSales(false);
     }
-  }, []);
+  }, [page, limit, debouncedSearch, warehouseFilter]);
 
-  useEffect(() => { loadSales(); }, [loadSales]);
+  useEffect(() => {
+    loadSales();
+  }, [loadSales]);
+
+  const handleWarehouseFilterChange = (val: string) => {
+    setWarehouseFilter(val);
+    setPage(1);
+    initialLoadDone.current = false; // allow auto-jump again if switching back to All Warehouses
+  };
+
+  const handleLimitChange = (val: number) => {
+    setLimit(val);
+    setPage(1);
+  };
 
   // ── Table state ───────────────────────────────────────────────────────────
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [openActionMenu, setOpenActionMenu] = useState<number | null>(null);
-  const [warehouseFilter, setWarehouseFilter] = useState("All Warehouses");
-  const [search, setSearch] = useState("");
-
-  // Client-side filter (warehouse + search)
-  const filteredSales = salesData.filter((s) => {
-    const matchWarehouse =
-      warehouseFilter === "All Warehouses" || s.warehouse === warehouseFilter;
-    const q = search.toLowerCase();
-    const matchSearch =
-      !q ||
-      (s.customerName ?? "").toLowerCase().includes(q) ||
-      (s.customerSurname ?? "").toLowerCase().includes(q) ||
-      (s.reference ?? "").toLowerCase().includes(q) ||
-      (s.biller ?? "").toLowerCase().includes(q);
-    return matchWarehouse && matchSearch;
-  });
   const [viewPaymentModal, setViewPaymentModal] = useState<{
     isOpen: boolean;
     saleData: any;
@@ -220,9 +214,9 @@ export function SalesManagement() {
 
   const toggleAll = () => {
     setSelectedRows((prev) =>
-      prev.length === filteredSales.length
+      prev.length === salesData.length
         ? []
-        : filteredSales.map((row) => row.id),
+        : salesData.map((row) => row.id),
     );
   };
 
@@ -274,11 +268,6 @@ export function SalesManagement() {
     setDeleteConfirmModal(true);
   };
 
-  const confirmDeleteSale = () => {
-    // Handle delete logic here
-    console.log("Sale deleted");
-    setOpenActionMenu(null);
-  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -326,7 +315,7 @@ export function SalesManagement() {
             </label>
             <select
               value={warehouseFilter}
-              onChange={(e) => setWarehouseFilter(e.target.value)}
+              onChange={(e) => handleWarehouseFilterChange(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm bg-blue-50"
             >
               {warehouseOptions.map((w) => <option key={w}>{w}</option>)}
@@ -386,7 +375,11 @@ export function SalesManagement() {
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Show</span>
-            <select className="px-3 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+            <select
+              value={limit}
+              onChange={(e) => handleLimitChange(parseInt(e.target.value))}
+              className="px-3 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm bg-white"
+            >
               <option value="10">10</option>
               <option value="25">25</option>
               <option value="50">50</option>
@@ -493,7 +486,7 @@ export function SalesManagement() {
                 </tr>
               )}
               {/* Empty state */}
-              {!isLoadingSales && !salesError && filteredSales.length === 0 && (
+              {!isLoadingSales && !salesError && salesData.length === 0 && (
                 <tr>
                   <td colSpan={14} className="px-4 py-16 text-center text-gray-400 text-sm">
                     No sales found
@@ -501,7 +494,7 @@ export function SalesManagement() {
                 </tr>
               )}
               {/* Data rows */}
-              {!isLoadingSales && !salesError && filteredSales.map((sale, index) => (
+              {!isLoadingSales && !salesError && salesData.map((sale, index) => (
                 <tr
                   key={sale.id}
                   className={`hover:bg-gray-100 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
@@ -517,10 +510,10 @@ export function SalesManagement() {
                   <td className="px-3 py-3 text-xs text-gray-900">
                     {sale.date
                       ? (() => {
-                          const d = new Date(sale.date);
-                          const pad = (n: number) => String(n).padStart(2, "0");
-                          return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-                        })()
+                        const d = new Date(sale.date);
+                        const pad = (n: number) => String(n).padStart(2, "0");
+                        return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+                      })()
                       : ""}
                   </td>
                   <td className="px-3 py-3 text-xs font-medium text-blue-600">
@@ -661,23 +654,45 @@ export function SalesManagement() {
         </div>
         <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between bg-gray-50">
           <div className="text-sm text-gray-600">
-            Showing <span className="font-medium">{filteredSales.length}</span> of{" "}
-            <span className="font-medium">{salesData.length}</span> results
+            Showing <span className="font-medium">{salesData.length > 0 ? (page - 1) * limit + 1 : 0}</span> to{" "}
+            <span className="font-medium">{Math.min(page * limit, totalRecords)}</span> of{" "}
+            <span className="font-medium">{totalRecords}</span> results
           </div>
           <div className="flex items-center gap-2">
-            <button className="px-3 py-1.5 border border-gray-200 rounded hover:bg-white transition-colors disabled:opacity-50 text-sm">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1.5 border border-gray-200 rounded hover:bg-white transition-colors disabled:opacity-50 text-sm bg-white text-gray-600"
+            >
               <ChevronLeft size={16} />
             </button>
-            <button className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm">
-              1
-            </button>
-            <button className="px-3 py-1.5 border border-gray-200 rounded hover:bg-white transition-colors text-sm">
-              2
-            </button>
-            <button className="px-3 py-1.5 border border-gray-200 rounded hover:bg-white transition-colors text-sm">
-              3
-            </button>
-            <button className="px-3 py-1.5 border border-gray-200 rounded hover:bg-white transition-colors text-sm">
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+              .map((p, idx, arr) => {
+                const prev = arr[idx - 1];
+                const showEllipsis = prev && p - prev > 1;
+                return (
+                  <span key={p} className="flex items-center gap-1.5">
+                    {showEllipsis && <span className="text-gray-400">...</span>}
+                    <button
+                      onClick={() => setPage(p)}
+                      className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${page === p
+                        ? "bg-blue-600 text-white"
+                        : "border border-gray-200 hover:bg-white text-gray-600 bg-white"
+                        }`}
+                    >
+                      {p}
+                    </button>
+                  </span>
+                );
+              })}
+
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-3 py-1.5 border border-gray-200 rounded hover:bg-white transition-colors disabled:opacity-50 text-sm bg-white text-gray-600"
+            >
               <ChevronRight size={16} />
             </button>
           </div>
@@ -740,7 +755,7 @@ export function SalesManagement() {
       <DeleteConfirmModal
         isOpen={deleteConfirmModal}
         onClose={() => setDeleteConfirmModal(false)}
-        onConfirm={confirmDeleteSale}
+        onConfirm={() => { setDeleteConfirmModal(false); setOpenActionMenu(null); }}
       />
 
       {notWorkingModal && (
