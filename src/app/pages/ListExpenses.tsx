@@ -1,10 +1,13 @@
 import { Upload } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export function ListExpenses() {
   const [showAddExpense, setShowAddExpense] = useState(false);
 
   const [openActionMenu, setOpenActionMenu] = useState<number | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [activeExpense, setActiveExpense] = useState<any>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const [expenseNoteModal, setExpenseNoteModal] = useState<any>(null);
 
@@ -51,27 +54,33 @@ export function ListExpenses() {
     id: i + 1,
   }));
 
-  const toggleActionMenu = (id: number) => {
-    setOpenActionMenu((prev) => (prev === id ? null : id));
+  const toggleActionMenu = (id: number, e: React.MouseEvent<HTMLButtonElement>) => {
+    if (openActionMenu === id) { setOpenActionMenu(null); setMenuPos(null); return; }
+    const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+    const dropdownHeight = 140;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const top = spaceBelow >= dropdownHeight ? rect.bottom + 4 : rect.top - dropdownHeight - 4;
+    setMenuPos({ top, left: rect.right - 224 });
+    setOpenActionMenu(id);
+    setActiveExpense(expensesData.find((d) => d.id === id) ?? null);
   };
 
   const handleExpenseNote = (item: any) => {
     setExpenseNoteModal(item);
     setOpenActionMenu(null);
+    setMenuPos(null);
   };
 
   const handleEditExpense = (item: any) => {
     setEditExpenseModal(item);
     setOpenActionMenu(null);
+    setMenuPos(null);
   };
 
   const handleDeleteExpense = (id: number) => {
-    setDeleteExpenseModal({
-      isOpen: true,
-      expenseId: id,
-    });
-
+    setDeleteExpenseModal({ isOpen: true, expenseId: id });
     setOpenActionMenu(null);
+    setMenuPos(null);
   };
 
   const confirmDeleteExpense = () => {
@@ -87,21 +96,19 @@ export function ListExpenses() {
     const handleClickOutside = (e: MouseEvent) => {
       if (
         !(e.target as HTMLElement).closest(".action-btn") &&
-        !(e.target as HTMLElement).closest(".action-menu")
-      ) {
-        setOpenActionMenu(null);
-      }
+        !(e.target as HTMLElement).closest(".action-menu-fixed")
+      ) { setOpenActionMenu(null); setMenuPos(null); }
     };
-
-    document.addEventListener("click", handleClickOutside);
-
+    const handleScroll = () => { setOpenActionMenu(null); setMenuPos(null); };
+    if (openActionMenu !== null) {
+      document.addEventListener("click", handleClickOutside);
+      window.addEventListener("scroll", handleScroll, true);
+    }
     return () => {
-      document.removeEventListener(
-        "click",
-        handleClickOutside,
-      );
+      document.removeEventListener("click", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll, true);
     };
-  }, []);
+  }, [openActionMenu]);
 
   return (
     <div className="min-h-screen bg-gray-100 p-4">
@@ -156,8 +163,8 @@ export function ListExpenses() {
             </div>
           </div>
 
-          <div className="overflow-visible rounded border border-gray-300">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto rounded border border-gray-300">
+            <table className="w-full min-w-max text-sm">
               <thead className="bg-blue-500 text-white">
                 <tr>
                   <th className="px-3 py-2 text-left font-medium">
@@ -232,62 +239,13 @@ export function ListExpenses() {
                       {item.createdBy}
                     </td>
 
-                    <td className="relative overflow-visible px-3 py-2">
+                    <td className="px-3 py-2">
                       <button
-                        onClick={() =>
-                          toggleActionMenu(item.id)
-                        }
+                        onClick={(e) => toggleActionMenu(item.id, e)}
                         className="action-btn rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700"
                       >
                         Actions
                       </button>
-
-                      {openActionMenu === item.id && (
-                        <div
-                          className="
-                            action-menu
-                            absolute
-                            right-0
-                            top-full
-                            mt-2
-                            z-[999]
-                            w-56
-                            overflow-hidden
-                            rounded-lg
-                            border
-                            border-gray-200
-                            bg-white
-                            shadow-2xl
-                          "
-                        >
-                          <button
-                            onClick={() =>
-                              handleExpenseNote(item)
-                            }
-                            className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-100"
-                          >
-                            📝 Expense Note
-                          </button>
-
-                          <button
-                            onClick={() =>
-                              handleEditExpense(item)
-                            }
-                            className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-100"
-                          >
-                            ✏️ Edit Expense
-                          </button>
-
-                          <button
-                            onClick={() =>
-                              handleDeleteExpense(item.id)
-                            }
-                            className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-red-600 transition hover:bg-red-50"
-                          >
-                            🗑️ Delete Expense
-                          </button>
-                        </div>
-                      )}
                     </td>
                   </tr>
                 ))}
@@ -691,6 +649,33 @@ export function ListExpenses() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+      {/* Fixed-position action dropdown */}
+      {openActionMenu !== null && menuPos && activeExpense && (
+        <div
+          ref={menuRef}
+          className="action-menu-fixed fixed w-56 bg-white border border-gray-200 rounded-lg shadow-2xl overflow-hidden"
+          style={{ top: menuPos.top, left: menuPos.left, zIndex: 99999 }}
+        >
+          <button
+            onClick={() => handleExpenseNote(activeExpense)}
+            className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-100"
+          >
+            📝 Expense Note
+          </button>
+          <button
+            onClick={() => handleEditExpense(activeExpense)}
+            className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-100"
+          >
+            ✏️ Edit Expense
+          </button>
+          <button
+            onClick={() => handleDeleteExpense(activeExpense.id)}
+            className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-red-600 transition hover:bg-red-50"
+          >
+            🗑️ Delete Expense
+          </button>
         </div>
       )}
     </div>

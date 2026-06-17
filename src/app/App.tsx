@@ -23,6 +23,7 @@ import { AddProduct } from "./pages/products/AddProduct";
 import { ListProducts } from "./pages/products/ListProducts";
 import { WarehouseSettings } from "./pages/settings/WarehouseSettings";
 import { UserManagement } from "./pages/settings/UserManagement";
+import { UserManagementSystem } from "./pages/settings/UserManagementSystem";
 
 // ─── Protected layout wrapper ─────────────────────────────────────────────────
 function ProtectedLayout() {
@@ -209,6 +210,9 @@ export default function App() {
             {/* Targets */}
             <Route path="/targets/sales" element={<UpcomingFeature />} />
             <Route path="/targets/set" element={<UpcomingFeature />} />
+
+            {/* User Management System */}
+            <Route path="/user-management-system" element={<UserManagementSystem />} />
 
             {/* Manual */}
             <Route path="/manual" element={<UpcomingFeature />} />

@@ -1,5 +1,5 @@
 import { StatusBadge } from "../components/ui/StatusBadge";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search, RefreshCw, Loader2, AlertCircle, ChevronLeft, ChevronRight,
 } from "lucide-react";
@@ -94,6 +94,8 @@ export function ListPurchases() {
   // ── Table state ───────────────────────────────────────────────────────────
   const [search, setSearch] = useState("");
   const [openActionMenu, setOpenActionMenu] = useState<number | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const filteredData = purchaseData.filter((p) => {
     const q = search.toLowerCase();
@@ -110,9 +112,24 @@ export function ListPurchases() {
   const [emailModal, setEmailModal] = useState<{ isOpen: boolean; saleData: any }>({ isOpen: false, saleData: null });
   const [deleteConfirmModal, setDeleteConfirmModal] = useState(false);
   const [notWorkingModal, setNotWorkingModal] = useState(false);
+  const [activePurchase, setActivePurchase] = useState<PurchaseRecord | null>(null);
 
-  const toggleActionMenu = (id: number) =>
-    setOpenActionMenu((prev) => (prev === id ? null : id));
+  const toggleActionMenu = (id: number, e: React.MouseEvent<HTMLButtonElement>) => {
+    if (openActionMenu === id) {
+      setOpenActionMenu(null);
+      setMenuPos(null);
+      return;
+    }
+    const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+    const dropdownHeight = 320;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const top = spaceBelow >= dropdownHeight
+      ? rect.bottom + 4
+      : rect.top - dropdownHeight - 4;
+    setMenuPos({ top, left: rect.right - 208 });
+    setOpenActionMenu(id);
+    setActivePurchase(purchaseData.find((p) => p.id === id) ?? null);
+  };
 
   const handleViewDetails = (p: any) => { setViewDetailsModal({ isOpen: true, saleData: p }); setOpenActionMenu(null); };
   const handleViewPayments = (p: any) => { setViewPaymentModal({ isOpen: true, saleData: p }); setOpenActionMenu(null); };
@@ -126,11 +143,18 @@ export function ListPurchases() {
     const handleClickOutside = (e: MouseEvent) => {
       if (
         !(e.target as HTMLElement).closest("button") &&
-        !(e.target as HTMLElement).closest(".action-menu")
-      ) setOpenActionMenu(null);
+        !(e.target as HTMLElement).closest(".action-menu-fixed")
+      ) { setOpenActionMenu(null); setMenuPos(null); }
     };
-    if (openActionMenu !== null) document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
+    const handleScroll = () => { setOpenActionMenu(null); setMenuPos(null); };
+    if (openActionMenu !== null) {
+      document.addEventListener("click", handleClickOutside);
+      window.addEventListener("scroll", handleScroll, true);
+    }
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
   }, [openActionMenu]);
 
   return (
@@ -178,22 +202,22 @@ export function ListPurchases() {
           </div>
 
           {/* Table */}
-          <div className="border border-gray-300 rounded overflow-visible relative">
-            <table className="w-full text-sm">
+          <div className="border border-gray-300 rounded overflow-x-auto relative">
+            <table className="w-full min-w-max text-sm">
               <thead className="bg-blue-500 text-white">
                 <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium">Date</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium">Reference No</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium">Supplier</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium">Supplier Phone</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium">Warehouse</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium">Purchase Status</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium">Grand Total</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium">Paid</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium">Balance</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium">Payment Status</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium">Note</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium">Actions</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Date</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Reference No</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Supplier</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Supplier Phone</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Warehouse</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Purchase Status</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Grand Total</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Paid</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Balance</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Payment Status</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Note</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -272,41 +296,13 @@ export function ListPurchases() {
                     <td className="px-3 py-2 text-xs text-gray-600 max-w-[140px] truncate">
                       {purchase.notes ?? ""}
                     </td>
-                    <td className="px-3 py-2 relative">
+                    <td className="px-3 py-2">
                       <button
-                        onClick={() => toggleActionMenu(purchase.id)}
-                        className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+                        onClick={(e) => toggleActionMenu(purchase.id, e)}
+                        className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors whitespace-nowrap"
                       >
                         Actions
                       </button>
-                      {openActionMenu === purchase.id && (
-                        <div className="action-menu absolute right-0 top-full mt-1 w-52 bg-white border border-gray-200 rounded-xl shadow-2xl z-[999] overflow-hidden">
-                          <button onClick={() => handleViewDetails(purchase)} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 flex items-center gap-2">
-                            <span>👁️</span> Purchase Details
-                          </button>
-                          <button onClick={() => handleViewPayments(purchase)} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 flex items-center gap-2">
-                            <span>💳</span> View Payment
-                          </button>
-                          <button onClick={() => handleAddPayment(purchase)} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 flex items-center gap-2">
-                            <span>➕</span> Add Payment
-                          </button>
-                          <button onClick={handleNotWorking} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 flex items-center gap-2">
-                            <span>✏️</span> Edit Purchase
-                          </button>
-                          <button className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 flex items-center gap-2">
-                            <span>📄</span> Download as PDF
-                          </button>
-                          <button onClick={() => handleEmail(purchase)} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 flex items-center gap-2">
-                            <span>📧</span> Email Purchase
-                          </button>
-                          <button onClick={handleNotWorking} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 flex items-center gap-2">
-                            <span>↩️</span> Return Purchase
-                          </button>
-                          <button onClick={handleDelete} className="w-full px-4 py-2 text-left text-xs hover:bg-red-50 text-red-600 flex items-center gap-2">
-                            <span>🗑️</span> Delete Purchase
-                          </button>
-                        </div>
-                      )}
                     </td>
                   </tr>
                 ))}
@@ -362,6 +358,40 @@ export function ListPurchases() {
       {notWorkingModal && (
         <div className="fixed inset-0 z-50" onClick={() => setNotWorkingModal(false)}>
           <NotWorking />
+        </div>
+      )}
+
+      {/* Fixed-position action dropdown — always visible regardless of scroll */}
+      {openActionMenu !== null && menuPos && activePurchase && (
+        <div
+          ref={menuRef}
+          className="action-menu-fixed fixed w-52 bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden"
+          style={{ top: menuPos.top, left: menuPos.left, zIndex: 99999 }}
+        >
+          <button onClick={() => handleViewDetails(activePurchase)} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 flex items-center gap-2">
+            <span>👁️</span> Purchase Details
+          </button>
+          <button onClick={() => handleViewPayments(activePurchase)} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 flex items-center gap-2">
+            <span>💳</span> View Payment
+          </button>
+          <button onClick={() => handleAddPayment(activePurchase)} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 flex items-center gap-2">
+            <span>➕</span> Add Payment
+          </button>
+          <button onClick={handleNotWorking} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 flex items-center gap-2">
+            <span>✏️</span> Edit Purchase
+          </button>
+          <button className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 flex items-center gap-2">
+            <span>📄</span> Download as PDF
+          </button>
+          <button onClick={() => handleEmail(activePurchase)} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 flex items-center gap-2">
+            <span>📧</span> Email Purchase
+          </button>
+          <button onClick={handleNotWorking} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 flex items-center gap-2">
+            <span>↩️</span> Return Purchase
+          </button>
+          <button onClick={() => { handleDelete(); setOpenActionMenu(null); setMenuPos(null); }} className="w-full px-4 py-2 text-left text-xs hover:bg-red-50 text-red-600 flex items-center gap-2">
+            <span>🗑️</span> Delete Purchase
+          </button>
         </div>
       )}
     </div>

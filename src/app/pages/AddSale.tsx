@@ -64,7 +64,7 @@ export function AddSale() {
   const [manualEntry, setManualEntry] = useState(false);
   const [manualSku, setManualSku] = useState("");
   const [manualName, setManualName] = useState("");
-  const [manualCost, setManualCost] = useState(0);
+  const [manualCost, setManualCost] = useState("0");
 
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -143,12 +143,12 @@ export function AddSale() {
     const product: ProductEntry = {
       sku: manualSku.trim(),
       name: manualName.trim(),
-      unitCost: manualCost,
+      unitCost: parseFloat(manualCost) || 0,
     };
     handlePickProduct(product);
     setManualSku("");
     setManualName("");
-    setManualCost(0);
+    setManualCost("0");
   };
 
   const addItemToOrder = (product: ProductEntry, isBackorder: boolean) => {
@@ -470,10 +470,15 @@ export function AddSale() {
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-0.5">Unit Price (ZAR) *</label>
                         <input
-                          type="number"
-                          min={0}
+                          type="text"
+                          inputMode="decimal"
                           value={manualCost}
-                          onChange={(e) => setManualCost(parseFloat(e.target.value) || 0)}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/[^0-9.]/g, "");
+                            // Strip leading zeros but allow "0." for decimals
+                            const stripped = raw.replace(/^0+(?=[1-9])/, "") || "0";
+                            setManualCost(stripped);
+                          }}
                           placeholder="0.00"
                           className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
@@ -489,24 +494,38 @@ export function AddSale() {
                         className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                       />
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleManualAdd}
-                      disabled={!manualName.trim() || !manualSku.trim()}
-                      className="w-full py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Add to Order
-                    </button>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => { setShowProductPicker(false); setManualEntry(false); setProductSearch(""); }}
+                        className="flex-1 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-medium transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleManualAdd}
+                        disabled={!manualName.trim() || !manualSku.trim()}
+                        className="flex-1 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Add to Order
+                      </button>
+                    </div>
                   </div>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() => { setShowProductPicker(false); setManualEntry(false); setProductSearch(""); }}
-                  className="mt-2 text-xs text-gray-500 hover:text-gray-700"
-                >
-                  Cancel
-                </button>
+                {/* Cancel button when in search/product-pick mode (not manual entry) */}
+                {!manualEntry && (
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="button"
+                      onClick={() => { setShowProductPicker(false); setProductSearch(""); }}
+                      className="px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

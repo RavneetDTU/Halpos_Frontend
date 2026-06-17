@@ -219,6 +219,7 @@ const navItems: NavItem[] = [
       { label: "Set Targets", icon: <PlusCircle size={18} />, path: "/targets/set" },
     ],
   },
+  { label: "User Management", icon: <Users size={20} />, path: "/user-management-system" },
   { label: "Hearing aid Manual", icon: <BookOpen size={20} />, path: "/manual" },
 ];
 
@@ -256,9 +257,8 @@ export function Sidebar() {
                   </div>
                   <ChevronDown
                     size={14}
-                    className={`transition-transform ${
-                      expandedItems.includes(item.label) ? "" : "-rotate-90"
-                    }`}
+                    className={`transition-transform ${expandedItems.includes(item.label) ? "" : "-rotate-90"
+                      }`}
                   />
                 </button>
                 {expandedItems.includes(item.label) && (
@@ -270,10 +270,9 @@ export function Sidebar() {
                           key={child.label}
                           to={child.path || "#"}
                           className={({ isActive }) =>
-                            `flex items-center gap-2 px-4 pl-10 py-1.5 text-xs transition-colors ${
-                              isActive
-                                ? "bg-blue-600 text-white"
-                                : "text-white/70 hover:bg-white/5 hover:text-white"
+                            `flex items-center gap-2 px-4 pl-10 py-1.5 text-xs transition-colors ${isActive
+                              ? "bg-blue-600 text-white"
+                              : "text-white/70 hover:bg-white/5 hover:text-white"
                             }`
                           }
                         >
@@ -287,10 +286,9 @@ export function Sidebar() {
               <NavLink
                 to={item.path || "#"}
                 className={({ isActive }) =>
-                  `flex items-center gap-2 px-4 py-2 transition-colors ${
-                    isActive
-                      ? "bg-blue-600 text-white"
-                      : "text-white/80 hover:bg-white/5 hover:text-white"
+                  `flex items-center gap-2 px-4 py-2 transition-colors ${isActive
+                    ? "bg-blue-600 text-white"
+                    : "text-white/80 hover:bg-white/5 hover:text-white"
                   }`
                 }
               >
@@ -302,7 +300,7 @@ export function Sidebar() {
         ))}
       </nav>
 
-     
+
     </aside>
   );
 }

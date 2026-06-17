@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export function CashupListing() {
   const cashupData = [
@@ -97,6 +97,9 @@ export function CashupListing() {
   const [openActionMenu, setOpenActionMenu] = useState<
     number | null
   >(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [activeCashup, setActiveCashup] = useState<(typeof cashupData)[0] | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
@@ -106,51 +109,52 @@ export function CashupListing() {
     cashupId: null,
   });
 
-  const toggleActionMenu = (id: number) => {
-    setOpenActionMenu((prev) => (prev === id ? null : id));
+  const toggleActionMenu = (id: number, e: React.MouseEvent<HTMLButtonElement>) => {
+    if (openActionMenu === id) { setOpenActionMenu(null); setMenuPos(null); return; }
+    const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+    const dropdownHeight = 110;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const top = spaceBelow >= dropdownHeight ? rect.bottom + 4 : rect.top - dropdownHeight - 4;
+    setMenuPos({ top, left: rect.right - 208 });
+    setOpenActionMenu(id);
+    setActiveCashup(cashupData.find((c) => c.id === id) ?? null);
   };
 
   const handleDeleteClick = (id: number) => {
-    setDeleteModal({
-      isOpen: true,
-      cashupId: id,
-    });
-
+    setDeleteModal({ isOpen: true, cashupId: id });
     setOpenActionMenu(null);
+    setMenuPos(null);
   };
 
   const handleDeleteConfirm = () => {
     console.log("Deleted:", deleteModal.cashupId);
-
-    setDeleteModal({
-      isOpen: false,
-      cashupId: null,
-    });
+    setDeleteModal({ isOpen: false, cashupId: null });
   };
 
   const handleDownload = (item: any) => {
     console.log("Download:", item);
     setOpenActionMenu(null);
+    setMenuPos(null);
   };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-
-      if (
-        !target.closest(".action-menu") &&
-        !target.closest(".action-btn")
-      ) {
+      if (!target.closest(".action-menu-fixed") && !target.closest(".action-btn")) {
         setOpenActionMenu(null);
+        setMenuPos(null);
       }
     };
-
-    document.addEventListener("click", handleClickOutside);
-
+    const handleScroll = () => { setOpenActionMenu(null); setMenuPos(null); };
+    if (openActionMenu !== null) {
+      document.addEventListener("click", handleClickOutside);
+      window.addEventListener("scroll", handleScroll, true);
+    }
     return () => {
       document.removeEventListener("click", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll, true);
     };
-  }, []);
+  }, [openActionMenu]);
 
   return (
     <div className="min-h-screen bg-gray-100 p-4">
@@ -227,8 +231,8 @@ export function CashupListing() {
             </div>
           </div>
 
-          <div className="overflow-visible rounded border border-gray-300">
-            <table className="relative w-full text-sm">
+          <div className="overflow-x-auto rounded border border-gray-300">
+            <table className="relative w-full min-w-max text-sm">
               <thead className="bg-blue-500 text-white">
                 <tr>
                   <th className="px-3 py-2 text-left font-medium">
@@ -303,75 +307,13 @@ export function CashupListing() {
                       {item.creditCard}
                     </td>
 
-                    <td className="relative overflow-visible px-3 py-2">
+                    <td className="px-3 py-2">
                       <button
-                        onClick={() =>
-                          toggleActionMenu(item.id)
-                        }
+                        onClick={(e) => toggleActionMenu(item.id, e)}
                         className="action-btn rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700"
                       >
                         Actions
                       </button>
-
-                      {openActionMenu === item.id && (
-                        <div
-                          className="
-                            action-menu
-                            absolute
-                            right-0
-                            top-full
-                            mt-2
-                            z-[999]
-                            w-52
-                            overflow-hidden
-                            rounded-lg
-                            border
-                            border-gray-200
-                            bg-white
-                            shadow-2xl
-                          "
-                        >
-                          <button
-                            onClick={() =>
-                              handleDeleteClick(item.id)
-                            }
-                            className="
-                              flex
-                              w-full
-                              items-center
-                              gap-2
-                              px-4
-                              py-3
-                              text-left
-                              text-sm
-                              text-gray-700
-                              transition
-                              hover:bg-gray-100
-                            "
-                          >
-                            🗑️ Delete Cashup
-                          </button>
-
-                          <button
-                            onClick={() => handleDownload(item)}
-                            className="
-                              flex
-                              w-full
-                              items-center
-                              gap-2
-                              px-4
-                              py-3
-                              text-left
-                              text-sm
-                              text-gray-700
-                              transition
-                              hover:bg-gray-100
-                            "
-                          >
-                            📄 Download Slip
-                          </button>
-                        </div>
-                      )}
                     </td>
                   </tr>
                 ))}
@@ -413,36 +355,42 @@ export function CashupListing() {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 p-4">
           <div className="w-full max-w-sm overflow-hidden rounded bg-white shadow-2xl">
             <div className="border-b border-gray-200 bg-gray-100 px-4 py-3">
-              <h2 className="text-lg font-semibold text-gray-800">
-                Delete Cashup
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-800">Delete Cashup</h2>
             </div>
-
             <div className="px-4 py-6">
               <p className="text-gray-700">Are you sure?</p>
-
               <div className="mt-6 flex justify-end gap-2">
-                <button
-                  onClick={handleDeleteConfirm}
-                  className="bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-600"
-                >
+                <button onClick={handleDeleteConfirm} className="bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-600">
                   Yes I'm sure
                 </button>
-
-                <button
-                  onClick={() =>
-                    setDeleteModal({
-                      isOpen: false,
-                      cashupId: null,
-                    })
-                  }
-                  className="bg-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-300"
-                >
+                <button onClick={() => setDeleteModal({ isOpen: false, cashupId: null })} className="bg-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-300">
                   No
                 </button>
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Fixed-position action dropdown */}
+      {openActionMenu !== null && menuPos && activeCashup && (
+        <div
+          ref={menuRef}
+          className="action-menu-fixed fixed w-52 bg-white border border-gray-200 rounded-lg shadow-2xl overflow-hidden"
+          style={{ top: menuPos.top, left: menuPos.left, zIndex: 99999 }}
+        >
+          <button
+            onClick={() => handleDeleteClick(activeCashup.id)}
+            className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-100"
+          >
+            🗑️ Delete Cashup
+          </button>
+          <button
+            onClick={() => handleDownload(activeCashup)}
+            className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-100"
+          >
+            📄 Download Slip
+          </button>
         </div>
       )}
     </div>

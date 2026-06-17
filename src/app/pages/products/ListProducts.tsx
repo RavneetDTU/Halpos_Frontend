@@ -165,19 +165,20 @@ export function ListProducts() {
 
       {/* Table */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-max">
           <thead className="bg-blue-600 text-white">
             <tr>
-              <th className="px-4 py-2.5 text-left text-xs font-medium">SKU</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium">Product Name</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium">Category</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium">Brand</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium">Warehouse</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium">Cost (ZAR)</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium">Sale (ZAR)</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium">Stock</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium">Status</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium">Actions</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium whitespace-nowrap">SKU</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium whitespace-nowrap">Product Name</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium whitespace-nowrap">Category</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium whitespace-nowrap">Brand</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium whitespace-nowrap">Warehouse</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium whitespace-nowrap">Cost (ZAR)</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium whitespace-nowrap">Sale (ZAR)</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium whitespace-nowrap">Stock</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium whitespace-nowrap">Status</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium whitespace-nowrap">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -217,7 +218,7 @@ export function ListProducts() {
                       {p.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setViewProduct(p)}
@@ -251,6 +252,7 @@ export function ListProducts() {
             )}
           </tbody>
         </table>
+        </div>
 
         {/* Pagination */}
         <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50/50">
