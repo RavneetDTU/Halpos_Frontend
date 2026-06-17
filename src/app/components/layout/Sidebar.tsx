@@ -87,6 +87,14 @@ const navItems: NavItem[] = [
     ],
   },
   {
+    label: "Proformas",
+    icon: <ClipboardList size={20} />,
+    children: [
+      { label: "List Proformas", icon: <ListOrdered size={18} />, path: "/proforma" },
+      { label: "Add Proforma", icon: <PlusCircle size={18} />, path: "/proforma/add" },
+    ],
+  },
+  {
     label: "Trials",
     icon: <Heart size={20} />,
     children: [

@@ -23,6 +23,8 @@ import { AddProduct } from "./pages/products/AddProduct";
 import { ListProducts } from "./pages/products/ListProducts";
 import { WarehouseSettings } from "./pages/settings/WarehouseSettings";
 import { UserManagement } from "./pages/settings/UserManagement";
+import { ListQuotations } from "./pages/ListQuotations";
+import { ListProformas } from "./pages/ListProformas";
 import { UserManagementSystem } from "./pages/settings/UserManagementSystem";
 
 // ─── Protected layout wrapper ─────────────────────────────────────────────────
@@ -122,8 +124,12 @@ export default function App() {
             <Route path="/invoice/:id" element={<InvoicePage />} />
 
             {/* Quotations */}
-            <Route path="/quotations" element={<UpcomingFeature />} />
-            <Route path="/quotations/add" element={<UpcomingFeature />} />
+            <Route path="/quotations" element={<ListQuotations />} />
+            <Route path="/quotations/add" element={<AddSale />} />
+
+            {/* Proformas */}
+            <Route path="/proforma" element={<ListProformas />} />
+            <Route path="/proforma/add" element={<AddSale />} />
 
             {/* Trials */}
             <Route path="/trials" element={<UpcomingFeature />} />
