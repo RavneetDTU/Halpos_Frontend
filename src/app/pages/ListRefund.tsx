@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DeleteConfirmModal } from "../components/modals/DeleteConfirmModal";
 import { ProcessModal } from "../components/modals/ProcessModal";
 import { ViewDetailsModal } from "../components/modals/ViewDetailsModal";
@@ -55,6 +55,9 @@ function getStatusVariant(status: string): "success" | "warning" | "error" | "in
 export function ListRefund() {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [openActionMenu, setOpenActionMenu] = useState<number | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [activeRefund, setActiveRefund] = useState<(typeof refundData)[0] | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [viewDetailsModal, setViewDetailsModal] = useState<{ isOpen: boolean; saleData: any }>({ isOpen: false, saleData: null });
   const [deleteConfirmModal, setDeleteConfirmModal] = useState(false);
   const [approveModal, setApproveModal] = useState(false);
@@ -72,17 +75,31 @@ export function ListRefund() {
     );
   };
 
-  const toggleActionMenu = (id: number) => {
-    setOpenActionMenu(prev => prev === id ? null : id);
+  const toggleActionMenu = (id: number, e: React.MouseEvent<HTMLButtonElement>) => {
+    if (openActionMenu === id) {
+      setOpenActionMenu(null);
+      setMenuPos(null);
+      return;
+    }
+    const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+    const dropdownHeight = 160;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const top = spaceBelow >= dropdownHeight ? rect.bottom + 4 : rect.top - dropdownHeight - 4;
+    setMenuPos({ top, left: rect.right - 240 });
+    setOpenActionMenu(id);
+    setActiveRefund(refundData.find((r) => r.id === id) ?? null);
   };
 
   const handleViewDetails = (refund: any) => {
     setViewDetailsModal({ isOpen: true, saleData: refund });
     setOpenActionMenu(null);
+    setMenuPos(null);
   };
 
   const handleDeleteRefund = () => {
     setDeleteConfirmModal(true);
+    setOpenActionMenu(null);
+    setMenuPos(null);
   };
 
   const confirmDeleteRefund = () => {
@@ -93,27 +110,31 @@ export function ListRefund() {
   const handleApprove = () => {
     setApproveModal(true);
     setOpenActionMenu(null);
+    setMenuPos(null);
   };
 
   const handleReject = () => {
     setRejectModal(true);
     setOpenActionMenu(null);
+    setMenuPos(null);
   };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('button') && !target.closest('.action-menu')) {
+      if (!target.closest('button') && !target.closest('.action-menu-fixed')) {
         setOpenActionMenu(null);
+        setMenuPos(null);
       }
     };
-
+    const handleScroll = () => { setOpenActionMenu(null); setMenuPos(null); };
     if (openActionMenu !== null) {
       document.addEventListener('click', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
     }
-
     return () => {
       document.removeEventListener('click', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
     };
   }, [openActionMenu]);
 
@@ -137,17 +158,11 @@ export function ListRefund() {
         <div className="grid grid-cols-5 gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Start Date</label>
-            <input
-              type="date"
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-            />
+            <input type="date" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">End Date</label>
-            <input
-              type="date"
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-            />
+            <input type="date" className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Product</label>
@@ -169,7 +184,7 @@ export function ListRefund() {
         </div>
       </div>
 
-      <div className="bg-white rounded border border-gray-200 overflow-visible">
+      <div className="bg-white rounded border border-gray-200">
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Show</span>
@@ -193,8 +208,8 @@ export function ListRefund() {
           </div>
         </div>
 
-        <div className="relative overflow-visible">
-          <table className="w-full">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-max">
             <thead className="bg-blue-500 text-white">
               <tr>
                 <th className="px-3 py-2 text-left">
@@ -205,19 +220,19 @@ export function ListRefund() {
                     className="rounded border-white/30 text-blue-600 focus:ring-blue-500"
                   />
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium">Date</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">Reference No</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">Biller</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">Customer Surname</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">Customer Phone</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">Customer Name</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">Marketing Source</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">Sale Status</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">Grand Total</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">Paid</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">Balance</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">Refund Method</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">Actions</th>
+                <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Date</th>
+                <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Reference No</th>
+                <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Biller</th>
+                <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Customer Surname</th>
+                <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Customer Phone</th>
+                <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Customer Name</th>
+                <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Marketing Source</th>
+                <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Sale Status</th>
+                <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Grand Total</th>
+                <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Paid</th>
+                <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Balance</th>
+                <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Refund Method</th>
+                <th className="px-3 py-2 text-left text-xs font-medium whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -231,8 +246,8 @@ export function ListRefund() {
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </td>
-                  <td className="px-3 py-3 text-xs text-gray-900">{refund.date}</td>
-                  <td className="px-3 py-3 text-xs font-medium text-blue-600">{refund.reference}</td>
+                  <td className="px-3 py-3 text-xs text-gray-900 whitespace-nowrap">{refund.date}</td>
+                  <td className="px-3 py-3 text-xs font-medium text-blue-600 whitespace-nowrap">{refund.reference}</td>
                   <td className="px-3 py-3 text-xs text-gray-900">{refund.biller}</td>
                   <td className="px-3 py-3 text-xs text-gray-900">{refund.customerSurname}</td>
                   <td className="px-3 py-3 text-xs text-gray-600">{refund.customerPhone}</td>
@@ -245,56 +260,13 @@ export function ListRefund() {
                   <td className="px-3 py-3 text-xs text-gray-900">{refund.paid}</td>
                   <td className="px-3 py-3 text-xs text-gray-900">{refund.balance}</td>
                   <td className="px-3 py-3 text-xs text-gray-600">{refund.refundMethod}</td>
-                  <td className="relative px-3 py-3 overflow-visible">
+                  <td className="px-3 py-3">
                     <button
-                      onClick={() => toggleActionMenu(refund.id)}
-                      className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+                      onClick={(e) => toggleActionMenu(refund.id, e)}
+                      className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors whitespace-nowrap"
                     >
                       Actions
                     </button>
-
-                    {openActionMenu === refund.id && (
-                      <div className="
-    action-menu
-    absolute
-    right-0
-    top-full
-    mt-2
-    z-[999]
-    w-60
-    overflow-hidden
-    rounded-xl
-    border
-    border-gray-200
-    bg-white
-    shadow-2xl
-  ">
-                        <button
-                          onClick={() => handleViewDetails(refund)}
-                          className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2"
-                        >
-                          <span>👁️</span> Sale Details
-                        </button>
-                        <button
-                          onClick={handleDeleteRefund}
-                          className="w-full px-4 py-2 text-left text-xs hover:bg-red-50 text-red-600 transition-colors flex items-center gap-2"
-                        >
-                          <span>🗑️</span> Delete Refund
-                        </button>
-                        <button
-                          onClick={handleApprove}
-                          className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2"
-                        >
-                          <span>✅</span> Approve
-                        </button>
-                        <button
-                          onClick={handleReject}
-                          className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2"
-                        >
-                          <span>❌</span> Reject
-                        </button>
-                      </div>
-                    )}
                   </td>
                 </tr>
               ))}
@@ -339,6 +311,28 @@ export function ListRefund() {
         onClose={() => setRejectModal(false)}
         type="reject"
       />
+
+      {/* Fixed-position action dropdown */}
+      {openActionMenu !== null && menuPos && activeRefund && (
+        <div
+          ref={menuRef}
+          className="action-menu-fixed fixed w-60 bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden"
+          style={{ top: menuPos.top, left: menuPos.left, zIndex: 99999 }}
+        >
+          <button onClick={() => handleViewDetails(activeRefund)} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2">
+            <span>👁️</span> Sale Details
+          </button>
+          <button onClick={handleDeleteRefund} className="w-full px-4 py-2 text-left text-xs hover:bg-red-50 text-red-600 transition-colors flex items-center gap-2">
+            <span>🗑️</span> Delete Refund
+          </button>
+          <button onClick={handleApprove} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2">
+            <span>✅</span> Approve
+          </button>
+          <button onClick={handleReject} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2">
+            <span>❌</span> Reject
+          </button>
+        </div>
+      )}
     </div>
   );
 }

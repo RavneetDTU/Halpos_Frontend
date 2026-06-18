@@ -41,6 +41,7 @@ interface NavItem {
   label: string;
   icon: React.ReactNode;
   path?: string;
+  action?: () => void;
   adminOnly?: boolean;
   children?: NavItem[];
 }
@@ -112,7 +113,7 @@ const navItems: NavItem[] = [
       { label: "Add Purchase by CSV", icon: <FileText size={18} />, path: "/purchases/add-csv" },
       { label: "List Return Purchases", icon: <RotateCcw size={18} />, path: "/purchases/return" },
       { label: "List Expenses", icon: <ListOrdered size={18} />, path: "/purchases/expenses" },
-      { label: "Add Expense", icon: <PlusCircle size={18} />, path: "/purchases/add-expense" },
+      { label: "Add Expense", icon: <PlusCircle size={18} />, action: () => window.dispatchEvent(new Event("open-add-expense")) },
     ],
   },
   {
@@ -227,6 +228,7 @@ const navItems: NavItem[] = [
       { label: "Set Targets", icon: <PlusCircle size={18} />, path: "/targets/set" },
     ],
   },
+  { label: "User Management", icon: <Users size={20} />, path: "/user-management-system" },
   { label: "Hearing aid Manual", icon: <BookOpen size={20} />, path: "/manual" },
 ];
 
@@ -264,9 +266,8 @@ export function Sidebar() {
                   </div>
                   <ChevronDown
                     size={14}
-                    className={`transition-transform ${
-                      expandedItems.includes(item.label) ? "" : "-rotate-90"
-                    }`}
+                    className={`transition-transform ${expandedItems.includes(item.label) ? "" : "-rotate-90"
+                      }`}
                   />
                 </button>
                 {expandedItems.includes(item.label) && (
@@ -274,19 +275,28 @@ export function Sidebar() {
                     {item.children
                       .filter((child) => !child.adminOnly || isAdmin)
                       .map((child) => (
-                        <NavLink
-                          key={child.label}
-                          to={child.path || "#"}
-                          className={({ isActive }) =>
-                            `flex items-center gap-2 px-4 pl-10 py-1.5 text-xs transition-colors ${
-                              isActive
+                        child.action ? (
+                          <button
+                            key={child.label}
+                            onClick={child.action}
+                            className="w-full flex items-center gap-2 px-4 pl-10 py-1.5 text-xs transition-colors text-white/70 hover:bg-white/5 hover:text-white text-left"
+                          >
+                            <span>{child.label}</span>
+                          </button>
+                        ) : (
+                          <NavLink
+                            key={child.label}
+                            to={child.path || "#"}
+                            className={({ isActive }) =>
+                              `flex items-center gap-2 px-4 pl-10 py-1.5 text-xs transition-colors ${isActive
                                 ? "bg-blue-600 text-white"
                                 : "text-white/70 hover:bg-white/5 hover:text-white"
-                            }`
-                          }
-                        >
-                          <span>{child.label}</span>
-                        </NavLink>
+                              }`
+                            }
+                          >
+                            <span>{child.label}</span>
+                          </NavLink>
+                        )
                       ))}
                   </div>
                 )}
@@ -295,10 +305,9 @@ export function Sidebar() {
               <NavLink
                 to={item.path || "#"}
                 className={({ isActive }) =>
-                  `flex items-center gap-2 px-4 py-2 transition-colors ${
-                    isActive
-                      ? "bg-blue-600 text-white"
-                      : "text-white/80 hover:bg-white/5 hover:text-white"
+                  `flex items-center gap-2 px-4 py-2 transition-colors ${isActive
+                    ? "bg-blue-600 text-white"
+                    : "text-white/80 hover:bg-white/5 hover:text-white"
                   }`
                 }
               >
@@ -310,7 +319,7 @@ export function Sidebar() {
         ))}
       </nav>
 
-     
+
     </aside>
   );
 }

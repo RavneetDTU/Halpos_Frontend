@@ -116,7 +116,7 @@ export function AddSale() {
   const [manualEntry, setManualEntry] = useState(false);
   const [manualSku, setManualSku] = useState("");
   const [manualName, setManualName] = useState("");
-  const [manualCost, setManualCost] = useState(0);
+  const [manualCost, setManualCost] = useState("0");
 
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -186,8 +186,15 @@ export function AddSale() {
 
   const handleManualAdd = () => {
     if (!manualName.trim() || !manualSku.trim()) return;
-    handlePickProduct({ sku: manualSku.trim(), name: manualName.trim(), unitCost: manualCost });
-    setManualSku(""); setManualName(""); setManualCost(0);
+    const product: ProductEntry = {
+      sku: manualSku.trim(),
+      name: manualName.trim(),
+      unitCost: parseFloat(manualCost) || 0,
+    };
+    handlePickProduct(product);
+    setManualSku("");
+    setManualName("");
+    setManualCost("0");
   };
 
   const addItemToOrder = (product: ProductEntry, isBackorder: boolean) => {
@@ -380,8 +387,11 @@ export function AddSale() {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-0.5">Unit Price (ZAR) *</label>
-              <input type="number" min={0} value={manualCost === 0 ? "" : manualCost}
-                onChange={(e) => setManualCost(parseFloat(e.target.value) || 0)}
+              <input type="text" inputMode="decimal" min={0} value={manualCost === "0" ? "" : manualCost}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/[^0-9.]/g, "");
+                  setManualCost(raw === "" ? "0" : raw);
+                }}
                 placeholder="0.00"
                 className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" />
             </div>
@@ -392,19 +402,37 @@ export function AddSale() {
               placeholder="e.g. Hearing Aid"
               className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" />
           </div>
-          <button type="button" onClick={handleManualAdd}
-            disabled={!manualName.trim() || !manualSku.trim()}
-            className="w-full py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-            Add to Order
-          </button>
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => { setShowProductPicker(false); setManualEntry(false); setProductSearch(""); }}
+              className="flex-1 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleManualAdd}
+              disabled={!manualName.trim() || !manualSku.trim()}
+              className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Add to Order
+            </button>
+          </div>
         </div>
       )}
 
-      <button type="button"
-        onClick={() => { setShowProductPicker(false); setManualEntry(false); setProductSearch(""); }}
-        className="mt-2 text-xs text-gray-500 hover:text-gray-700">
-        Cancel
-      </button>
+      {!manualEntry && (
+        <div className="flex justify-end pt-2">
+          <button
+            type="button"
+            onClick={() => { setShowProductPicker(false); setProductSearch(""); }}
+            className="px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-medium transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   );
 
@@ -500,9 +528,8 @@ export function AddSale() {
             const isSelected = docType === dt.id;
             return (
               <button key={dt.id} type="button" onClick={() => switchDocType(dt.id)}
-                className={`relative text-left p-4 rounded-xl border-2 transition-all shadow-sm bg-white ${
-                  isSelected ? "border-violet-500 shadow-violet-100" : "border-gray-200 hover:border-gray-300 hover:shadow-md"
-                }`}>
+                className={`relative text-left p-4 rounded-xl border-2 transition-all shadow-sm bg-white ${isSelected ? "border-violet-500 shadow-violet-100" : "border-gray-200 hover:border-gray-300 hover:shadow-md"
+                  }`}>
                 {isSelected && <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-violet-500" />}
                 {/* Icon + Title on same line */}
                 <div className="flex items-center gap-2.5 mb-2">
@@ -537,17 +564,6 @@ export function AddSale() {
                 <Info size={13} /> No stock reserved
               </div>
             </div>
-
-            {submitSuccess && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
-                <CheckCircle2 size={16} /> Quote submitted successfully! Redirecting…
-              </div>
-            )}
-            {submitError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-start gap-2">
-                <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />{submitError}
-              </div>
-            )}
 
             {/* Row 1 */}
             <div className="grid grid-cols-4 gap-4 mb-4">

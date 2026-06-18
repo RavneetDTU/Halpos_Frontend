@@ -12,6 +12,8 @@ import {
   CreditCard,
   Flag,
   LogOut,
+  AlertTriangle,
+  Settings,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router";
@@ -40,92 +42,93 @@ export function Navbar() {
   }, []);
 
   return (
-    <header className="h-12 bg-[#3d3d3d] flex items-center justify-between px-2 gap-1">
-      {/* Left side icons */}
+    <header className="h-14 bg-[#11131c] border-b border-white/5 flex items-center justify-between px-4 gap-4">
+      {/* Left side: Quick Shortcut Toolbar */}
       <div className="flex items-center gap-1">
-        <button className="w-12 h-12 flex items-center justify-center hover:bg-white/10 transition-colors">
-          <FileText size={20} className="text-white" />
+        <button title="Documents" className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all">
+          <FileText size={18} />
         </button>
-        <button className="w-12 h-12 flex items-center justify-center hover:bg-white/10 transition-colors">
-          <FileText size={20} className="text-white" />
+
+        <div className="h-4 w-px bg-white/10 mx-1.5" />
+
+        <button title="Analytics" className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all">
+          <BarChart3 size={18} />
         </button>
-        <button className="w-12 h-12 flex items-center justify-center hover:bg-white/10 transition-colors">
-          <FileText size={20} className="text-white" />
+        <button title="Cloud Sync" className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all">
+          <Cloud size={18} />
         </button>
-        <button className="w-12 h-12 flex items-center justify-center hover:bg-white/10 transition-colors">
-          <BarChart3 size={20} className="text-white" />
+        <button title="Network Status" className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all">
+          <Network size={18} />
         </button>
-        <button className="w-12 h-12 flex items-center justify-center hover:bg-white/10 transition-colors">
-          <Cloud size={20} className="text-white" />
+        <button title="Messages" className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all">
+          <MessageCircle size={18} />
         </button>
-        <button className="w-12 h-12 flex items-center justify-center hover:bg-white/10 transition-colors">
-          <Network size={20} className="text-white" />
+
+        <div className="h-4 w-px bg-white/10 mx-1.5" />
+
+        <button title="Notifications" className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all relative">
+          <Bell size={18} />
+
         </button>
-        <button className="w-12 h-12 flex items-center justify-center hover:bg-white/10 transition-colors">
-          <MessageCircle size={20} className="text-white" />
+        <button title="Calculator" className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all">
+          <Calculator size={18} />
         </button>
-        <button className="w-12 h-12 flex items-center justify-center bg-green-600 hover:bg-green-700 transition-colors relative">
-          <Bell size={20} className="text-white" />
-          <span className="absolute top-1 right-1 bg-red-600 text-white text-xs font-bold px-1 py-0.5 rounded leading-none">
-            8973
-          </span>
+        <button title="Calendar" className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all">
+          <Calendar size={18} />
         </button>
-        <button className="w-12 h-12 flex items-center justify-center hover:bg-white/10 transition-colors">
-          <Calculator size={20} className="text-white" />
+        <button title="Payments" className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all">
+          <CreditCard size={18} />
         </button>
-        <button className="w-12 h-12 flex items-center justify-center hover:bg-white/10 transition-colors">
-          <Calendar size={20} className="text-white" />
+        <button title="Flags" className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all">
+          <Flag size={18} />
         </button>
-        <button className="w-12 h-12 flex items-center justify-center hover:bg-white/10 transition-colors">
-          <CreditCard size={20} className="text-white" />
-        </button>
-        <button className="w-12 h-12 flex items-center justify-center hover:bg-white/10 transition-colors">
-          <Flag size={20} className="text-white" />
-        </button>
-        <button className="w-12 h-12 flex items-center justify-center bg-yellow-500 hover:bg-yellow-600 transition-colors">
-          <span className="text-white font-bold text-lg">⚠</span>
-        </button>
-        <button className="w-12 h-12 flex items-center justify-center bg-green-600 hover:bg-green-700 transition-colors">
-          <ShoppingCart size={20} className="text-white" />
-        </button>
-        <button className="w-12 h-12 flex items-center justify-center bg-red-600 hover:bg-red-700 transition-colors">
-          <span className="text-white font-bold text-lg">⚙</span>
-        </button>
+
+        <div className="h-4 w-px bg-white/10 mx-1.5" />
+
+        {/* Quick Action Status / Alerts */}
+        <div className="flex items-center gap-1.5">
+          <button title="System Warnings" className="w-9 h-9 rounded-lg flex items-center justify-center bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-all">
+            <AlertTriangle size={18} />
+          </button>
+          <button title="POS / Register" className="w-9 h-9 rounded-lg flex items-center justify-center bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-all">
+            <ShoppingCart size={18} />
+          </button>
+          <button title="Settings" className="w-9 h-9 rounded-lg flex items-center justify-center bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-all">
+            <Settings size={18} />
+          </button>
+        </div>
       </div>
 
-      {/* Right side: User info + clickable profile avatar */}
-      <div className="flex items-center gap-3 px-3">
-
-        {/* User name & warehouse */}
-        <div className="text-right">
-          <div className="text-xs text-white font-medium leading-tight">{user?.name ?? "—"}</div>
-          <div className="text-xs text-white/50 leading-tight">{user?.warehouse ?? ""}</div>
+      {/* Right side: User Profile & Dropdown */}
+      <div className="flex items-center gap-3">
+        <div className="text-right hidden sm:block">
+          <div className="text-xs text-slate-200 font-semibold leading-tight">{user?.name ?? "—"}</div>
+          <div className="text-[10px] text-slate-400 font-medium leading-none mt-0.5">{user?.warehouse ?? ""}</div>
         </div>
 
-        {/* Clickable profile avatar with dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsOpen((v) => !v)}
             title="Account menu"
-            className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-xs font-semibold shadow-lg border-2 border-white/20 hover:border-blue-300/60 transition-all flex-shrink-0 focus:outline-none"
+            className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-md hover:ring-2 hover:ring-indigo-500/50 transition-all"
           >
             {user?.initials ?? "?"}
           </button>
 
-          {/* Dropdown */}
+          {/* User Dropdown */}
           {isOpen && (
-            <div className="absolute right-0 top-full mt-2 w-52 bg-[#2a2d3e] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
-              {/* User info header */}
-              <div className="px-4 py-3 border-b border-white/10 bg-white/5">
+            <div className="absolute right-0 top-full mt-2.5 w-56 bg-[#161925]/95 backdrop-blur-md border border-white/10 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in duration-200">
+              <div className="px-4 py-3.5 border-b border-white/5 bg-white/5">
                 <p className="text-xs font-semibold text-white truncate">{user?.name}</p>
-                <p className="text-[10px] text-white/40 truncate mt-0.5">{user?.email}</p>
-                <p className="text-[10px] text-blue-400 truncate mt-0.5">{user?.warehouse}</p>
+                <p className="text-[10px] text-slate-400 truncate mt-0.5">{user?.email}</p>
+                <span className="inline-block mt-2 px-2 py-0.5 bg-blue-500/15 text-blue-400 rounded text-[9px] font-semibold tracking-wide uppercase">
+                  {user?.warehouse || "No Warehouse"}
+                </span>
               </div>
-              {/* Sign out */}
               <button
                 id="logout-btn"
                 onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors font-medium"
+                className="w-full flex items-center gap-2 px-4 py-3 text-xs text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors font-medium"
               >
                 <LogOut size={14} />
                 Sign Out
@@ -137,3 +140,4 @@ export function Navbar() {
     </header>
   );
 }
+

@@ -165,92 +165,93 @@ export function ListProducts() {
 
       {/* Table */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-blue-600 text-white">
-            <tr>
-              <th className="px-4 py-2.5 text-left text-xs font-medium">SKU</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium">Product Name</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium">Category</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium">Brand</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium">Warehouse</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium">Cost (ZAR)</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium">Sale (ZAR)</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium">Stock</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium">Status</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {filtered.map((p, i) => {
-              const stockStatus = getStockStatus(p.stock);
-              return (
-                <tr key={p.id} className={`hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}>
-                  <td className="px-4 py-3">
-                    <span className="text-xs font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">{p.sku}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="text-sm font-medium text-gray-900">{p.name}</p>
-                    <p className="text-xs text-gray-500">{p.unit}</p>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-gray-700">{p.category}</td>
-                  <td className="px-4 py-3 text-xs text-gray-700">{p.brand}</td>
-                  <td className="px-4 py-3 text-xs text-gray-600">{p.warehouse}</td>
-                  <td className="px-4 py-3 text-xs text-right font-medium text-gray-900">
-                    R {p.costPrice.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-right font-semibold text-green-700">
-                    R {p.salePrice.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-semibold text-gray-900">{p.stock}</span>
-                      <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${stockStatus.color}`}>
-                        {stockStatus.label}
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-max">
+            <thead className="bg-blue-600 text-white">
+              <tr>
+                <th className="px-4 py-2.5 text-left text-xs font-medium whitespace-nowrap">SKU</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium whitespace-nowrap">Product Name</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium whitespace-nowrap">Category</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium whitespace-nowrap">Brand</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium whitespace-nowrap">Warehouse</th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium whitespace-nowrap">Cost (ZAR)</th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium whitespace-nowrap">Sale (ZAR)</th>
+                <th className="px-4 py-2.5 text-center text-xs font-medium whitespace-nowrap">Stock</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium whitespace-nowrap">Status</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium whitespace-nowrap">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filtered.map((p, i) => {
+                const stockStatus = getStockStatus(p.stock);
+                return (
+                  <tr key={p.id} className={`hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}>
+                    <td className="px-4 py-3">
+                      <span className="text-xs font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">{p.sku}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-sm font-medium text-gray-900">{p.name}</p>
+                      <p className="text-xs text-gray-500">{p.unit}</p>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-700">{p.category}</td>
+                    <td className="px-4 py-3 text-xs text-gray-700">{p.brand}</td>
+                    <td className="px-4 py-3 text-xs text-gray-600">{p.warehouse}</td>
+                    <td className="px-4 py-3 text-xs text-right font-medium text-gray-900">
+                      R {p.costPrice.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-right font-semibold text-green-700">
+                      R {p.salePrice.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-sm font-semibold text-gray-900">{p.stock}</span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${stockStatus.color}`}>
+                          {stockStatus.label}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${p.status === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                        }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${p.status === "Active" ? "bg-green-500" : "bg-gray-400"}`} />
+                        {p.status}
                       </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                      p.status === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${p.status === "Active" ? "bg-green-500" : "bg-gray-400"}`} />
-                      {p.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => setViewProduct(p)}
-                        className="p-1.5 rounded hover:bg-blue-50 text-blue-600 transition-colors"
-                        title="View"
-                      >
-                        <Eye size={14} />
-                      </button>
-                      {isAdmin && (
-                        <>
-                          <button className="p-1.5 rounded hover:bg-green-50 text-green-600 transition-colors" title="Edit">
-                            <Edit2 size={14} />
-                          </button>
-                          <button className="p-1.5 rounded hover:bg-red-50 text-red-500 transition-colors" title="Delete">
-                            <Trash2 size={14} />
-                          </button>
-                        </>
-                      )}
-                    </div>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setViewProduct(p)}
+                          className="p-1.5 rounded hover:bg-blue-50 text-blue-600 transition-colors"
+                          title="View"
+                        >
+                          <Eye size={14} />
+                        </button>
+                        {isAdmin && (
+                          <>
+                            <button className="p-1.5 rounded hover:bg-green-50 text-green-600 transition-colors" title="Edit">
+                              <Edit2 size={14} />
+                            </button>
+                            <button className="p-1.5 rounded hover:bg-red-50 text-red-500 transition-colors" title="Delete">
+                              <Trash2 size={14} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={10} className="px-4 py-16 text-center">
+                    <Package size={40} className="text-gray-200 mx-auto mb-3" />
+                    <p className="text-gray-400 text-sm">No products found matching your filters</p>
                   </td>
                 </tr>
-              );
-            })}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={10} className="px-4 py-16 text-center">
-                  <Package size={40} className="text-gray-200 mx-auto mb-3" />
-                  <p className="text-gray-400 text-sm">No products found matching your filters</p>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
 
         {/* Pagination */}
         <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50/50">

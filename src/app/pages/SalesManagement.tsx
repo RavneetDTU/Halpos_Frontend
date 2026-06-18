@@ -172,6 +172,9 @@ export function SalesManagement() {
   // ── Table state ───────────────────────────────────────────────────────────
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [openActionMenu, setOpenActionMenu] = useState<number | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [activeSale, setActiveSale] = useState<SaleRecord | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [viewPaymentModal, setViewPaymentModal] = useState<{
     isOpen: boolean;
     saleData: any;
@@ -220,8 +223,21 @@ export function SalesManagement() {
     );
   };
 
-  const toggleActionMenu = (id: number) => {
-    setOpenActionMenu((prev) => (prev === id ? null : id));
+  const toggleActionMenu = (id: number, e: React.MouseEvent<HTMLButtonElement>) => {
+    if (openActionMenu === id) {
+      setOpenActionMenu(null);
+      setMenuPos(null);
+      return;
+    }
+    const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+    const dropdownHeight = 340;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const top = spaceBelow >= dropdownHeight
+      ? rect.bottom + 4
+      : rect.top - dropdownHeight - 4;
+    setMenuPos({ top, left: rect.right - 240 });
+    setOpenActionMenu(id);
+    setActiveSale(salesData.find((s) => s.id === id) ?? null);
   };
 
   const handleViewDetails = (sale: any) => {
@@ -274,18 +290,20 @@ export function SalesManagement() {
       const target = event.target as HTMLElement;
       if (
         !target.closest("button") &&
-        !target.closest(".action-menu")
+        !target.closest(".action-menu-fixed")
       ) {
         setOpenActionMenu(null);
+        setMenuPos(null);
       }
     };
-
+    const handleScroll = () => { setOpenActionMenu(null); setMenuPos(null); };
     if (openActionMenu !== null) {
       document.addEventListener("click", handleClickOutside);
+      window.addEventListener("scroll", handleScroll, true);
     }
-
     return () => {
       document.removeEventListener("click", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll, true);
     };
   }, [openActionMenu]);
 
@@ -410,8 +428,8 @@ export function SalesManagement() {
             </div>
           </div>
         </div>
-        <div className="relative overflow-visible">
-          <table className="w-full">
+        <div className="relative overflow-x-auto">
+          <table className="w-full min-w-max">
             <thead className="bg-blue-500 text-white">
               <tr>
                 <th className="px-3 py-2 text-left">
@@ -553,99 +571,13 @@ export function SalesManagement() {
                       variant={getStatusVariant(sale.paymentStatus ?? "")}
                     />
                   </td>
-                  <td className="relative px-3 py-3 overflow-visible">
+                  <td className="px-3 py-3">
                     <button
-                      onClick={() => toggleActionMenu(sale.id)}
+                      onClick={(e) => toggleActionMenu(sale.id, e)}
                       className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
                     >
                       Actions
                     </button>
-
-                    {openActionMenu === sale.id && (
-                      <div
-                        className="
-    action-menu
-    absolute
-    right-0
-    top-full
-    mt-2
-    z-[999]
-    w-60
-    overflow-hidden
-    rounded-xl
-    border
-    border-gray-200
-    bg-white
-    shadow-2xl
-  "
-                      >
-                        <button
-                          onClick={() =>
-                            handleViewDetails(sale)
-                          }
-                          className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2"
-                        >
-                          <span>👁️</span> Sales Details
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleViewPayments(sale)
-                          }
-                          className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2"
-                        >
-                          <span>💳</span> View Payments
-                        </button>
-                        <button
-                          onClick={() => handleAddPayment(sale)}
-                          className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2"
-                        >
-                          <span>➕</span> Add Payment
-                        </button>
-                        <button
-                          onClick={() => handleReturnSale(sale)}
-                          className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2"
-                        >
-                          <span>↩️</span> Return Sale
-                        </button>
-                        <button
-                          onClick={() => handleEmailSale(sale)}
-                          className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2"
-                        >
-                          <span>📧</span> Email Invoice
-                        </button>
-                        <button className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2">
-                          <span>📄</span> Download as PDF
-                        </button>
-                        <button
-                          onClick={handleEditSale}
-                          className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2"
-                        >
-                          <span>✏️</span> Edit sale
-                        </button>
-                        <button
-                          onClick={handleDeleteSale}
-                          className="w-full px-4 py-2 text-left text-xs hover:bg-red-50 text-red-600 transition-colors flex items-center gap-2"
-                        >
-                          <span>🗑️</span> Delete Sale
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleProposeRefund(sale)
-                          }
-                          className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2"
-                        >
-                          <span>🖨️</span> Propose a refund
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleAddDelivery(sale)
-                          }
-                          className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2"
-                        >
-                          <span>🚚</span> Add Delivery
-                        </button>
-                      </div>
-                    )}
                   </td>
                 </tr>
               ))}
@@ -764,6 +696,46 @@ export function SalesManagement() {
           onClick={() => setNotWorkingModal(false)}
         >
           <NotWorking />
+        </div>
+      )}
+
+      {/* Fixed-position action dropdown — always visible regardless of scroll/overflow */}
+      {openActionMenu !== null && menuPos && activeSale && (
+        <div
+          ref={menuRef}
+          className="action-menu-fixed fixed w-60 bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden"
+          style={{ top: menuPos.top, left: menuPos.left, zIndex: 99999 }}
+        >
+          <button onClick={() => handleViewDetails(activeSale)} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2">
+            <span>👁️</span> Sales Details
+          </button>
+          <button onClick={() => handleViewPayments(activeSale)} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2">
+            <span>💳</span> View Payments
+          </button>
+          <button onClick={() => handleAddPayment(activeSale)} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2">
+            <span>➕</span> Add Payment
+          </button>
+          <button onClick={() => handleReturnSale(activeSale)} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2">
+            <span>↩️</span> Return Sale
+          </button>
+          <button onClick={() => handleEmailSale(activeSale)} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2">
+            <span>📧</span> Email Invoice
+          </button>
+          <button className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2">
+            <span>📄</span> Download as PDF
+          </button>
+          <button onClick={handleEditSale} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2">
+            <span>✏️</span> Edit sale
+          </button>
+          <button onClick={handleDeleteSale} className="w-full px-4 py-2 text-left text-xs hover:bg-red-50 text-red-600 transition-colors flex items-center gap-2">
+            <span>🗑️</span> Delete Sale
+          </button>
+          <button onClick={() => handleProposeRefund(activeSale)} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2">
+            <span>🖨️</span> Propose a refund
+          </button>
+          <button onClick={() => handleAddDelivery(activeSale)} className="w-full px-4 py-2 text-left text-xs hover:bg-gray-100 transition-colors flex items-center gap-2">
+            <span>🚚</span> Add Delivery
+          </button>
         </div>
       )}
     </div>

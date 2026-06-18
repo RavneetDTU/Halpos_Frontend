@@ -1,9 +1,10 @@
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, X } from "lucide-react";
+import { useState, useEffect } from "react";
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router";
 import { Navbar } from "./components/layout/Navbar";
 import { Sidebar } from "./components/layout/Sidebar";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { AddExpense } from "./pages/AddExpense";
+
 import { AddPurchase } from "./pages/AddPurchase";
 import { AddPurchaseByCSV } from "./pages/AddPurchaseByCSV";
 import { AddSale } from "./pages/AddSale";
@@ -25,10 +26,18 @@ import { WarehouseSettings } from "./pages/settings/WarehouseSettings";
 import { UserManagement } from "./pages/settings/UserManagement";
 import { ListQuotations } from "./pages/ListQuotations";
 import { ListProformas } from "./pages/ListProformas";
+import { UserManagementSystem } from "./pages/settings/UserManagementSystem";
 
 // ─── Protected layout wrapper ─────────────────────────────────────────────────
 function ProtectedLayout() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setShowExpenseModal(true);
+    window.addEventListener("open-add-expense", handler);
+    return () => window.removeEventListener("open-add-expense", handler);
+  }, []);
 
   // Show a full-screen spinner while restoring the session from localStorage
   if (isLoading) {
@@ -53,6 +62,121 @@ function ProtectedLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* ── Global Add Expense Modal ── */}
+      {showExpenseModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-2xl overflow-hidden rounded-xl bg-white shadow-2xl">
+
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 bg-gray-50">
+              <h2 className="text-base font-semibold text-gray-900">Add Expense</h2>
+              <button
+                onClick={() => setShowExpenseModal(false)}
+                className="text-gray-400 hover:text-gray-700 transition rounded-lg hover:bg-gray-100 p-1"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5">
+              <p className="mb-5 text-sm text-gray-500">
+                Please fill in the information below. Fields marked with <span className="text-red-500">*</span> are required.
+              </p>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-700">Date *</label>
+                    <input
+                      type="datetime-local"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-700">Reference</label>
+                    <input
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                      placeholder="e.g. REF-001"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-700">Category</label>
+                    <select className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 bg-white">
+                      <option value="">Select Category</option>
+                      <option>Office Supplies</option>
+                      <option>Travel</option>
+                      <option>Maintenance</option>
+                      <option>Utilities</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-700">Warehouse</label>
+                    <select className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 bg-white">
+                      <option value="">Select Warehouse</option>
+                      <option>HEAD OFFICE</option>
+                      <option>BRANCH 1</option>
+                      <option>BRANCH 2</option>
+                      <option>BRANCH 3</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-700">Amount (ZAR) *</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-700">Attachment</label>
+                  <div className="flex gap-2">
+                    <input
+                      readOnly
+                      placeholder="No file chosen"
+                      className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50"
+                    />
+                    <button className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 transition-colors">
+                      <Upload size={14} /> Browse
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-700">Note</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Add any relevant notes..."
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  onClick={() => setShowExpenseModal(false)}
+                  className="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button className="rounded-lg bg-blue-600 px-5 py-2 text-sm text-white hover:bg-blue-700 transition-colors font-medium">
+                  Add Expense
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -141,7 +265,6 @@ export default function App() {
             <Route path="/purchases/add-csv" element={<AddPurchaseByCSV />} />
             <Route path="/purchases/return" element={<ListReturnPurchases />} />
             <Route path="/purchases/expenses" element={<ListExpenses />} />
-            <Route path="/purchases/add-expense" element={<AddExpense />} />
 
             {/* Transfers */}
             <Route path="/transfers" element={<UpcomingFeature />} />
@@ -215,6 +338,9 @@ export default function App() {
             {/* Targets */}
             <Route path="/targets/sales" element={<UpcomingFeature />} />
             <Route path="/targets/set" element={<UpcomingFeature />} />
+
+            {/* User Management System */}
+            <Route path="/user-management-system" element={<UserManagementSystem />} />
 
             {/* Manual */}
             <Route path="/manual" element={<UpcomingFeature />} />
