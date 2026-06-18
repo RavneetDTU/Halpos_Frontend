@@ -8,6 +8,8 @@ import {
   AlertCircle,
   Ear,
   Loader2,
+  User,
+  Lock,
 } from "lucide-react";
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -46,119 +48,129 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f1117] via-[#1a1d29] to-[#0d1526] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-[#090b10] flex items-center justify-center p-6 relative overflow-hidden font-sans">
 
-      {/* Decorative background blobs */}
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+      {/* Dynamic Background Effects */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[140px] pointer-events-none" />
 
-      <div className="w-full max-w-md relative z-10">
+      <div className="w-full max-w-[420px] relative z-10">
 
-        {/* Logo / Brand */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl shadow-2xl shadow-blue-500/30 mb-4">
-            <Ear size={32} className="text-white" />
+        {/* Top Brand Header */}
+        <div className="flex flex-col items-center text-center mb-8">
+          <div className="w-16 h-16 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20 mb-4">
+            <Ear className="text-white w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Hearing Aid Labs</h1>
-          <p className="text-sm text-white/50 mt-1">HALPOS · Point of Sale System</p>
+          <h1 className="text-2xl font-bold text-white tracking-wide">Hearing Aid Labs</h1>
+          <p className="text-sm text-blue-400 font-semibold tracking-wider uppercase mt-1">
+            Point of Sale & Audiology Portal
+          </p>
         </div>
 
-        {/* Card */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+        {/* Login Glassmorphic Card */}
+        <div className="w-full bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl p-8 transition-all hover:border-white/15">
 
-          {/* Card header */}
-          <div className="px-8 pt-7 pb-2 border-b border-white/10">
-            <div className="flex items-center gap-3 mb-1">
-              <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                <LogIn size={16} className="text-blue-400" />
-              </div>
-              <h2 className="text-base font-semibold text-white">Sign in to your account</h2>
-            </div>
-            <p className="text-xs text-white/40 ml-11">Enter your credentials to access the system</p>
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-center text-white">Welcome Back</h2>
+            <p className="text-sm text-gray-400 mt-1 text-center">Sign in to access your workspace.</p>
           </div>
 
-          <div className="p-8">
+          {/* Error Alert */}
+          {error && (
+            <div className="flex items-start gap-3 p-3.5 bg-red-500/10 border-l-4 border-red-500 rounded-r-xl mb-5">
+              <AlertCircle size={18} className="text-red-400 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-200">{error}</p>
+            </div>
+          )}
 
-            {/* Error Alert */}
-            {error && (
-              <div className="flex items-start gap-3 p-3 bg-red-500/10 border border-red-500/30 rounded-xl mb-5">
-                <AlertCircle size={16} className="text-red-400 mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-red-300">{error}</p>
-              </div>
-            )}
-
-            {/* ── LOGIN FORM ── */}
-            <form onSubmit={handleLogin} className="space-y-4">
-
-              {/* Username */}
-              <div>
-                <label className="block text-xs font-medium text-white/70 mb-1.5">
-                  Username
-                </label>
+          {/* Form */}
+          <form onSubmit={handleLogin} className="space-y-5">
+            {/* Username Field */}
+            <div>
+              <label htmlFor="login-username" className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
+                Username
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                  <User size={16} />
+                </span>
                 <input
                   id="login-username"
                   type="text"
                   autoComplete="username"
                   value={loginUsername}
                   onChange={(e) => setLoginUsername(e.target.value)}
-                  placeholder="johndoe"
-                  className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                  placeholder="Enter your username"
+                  className="w-full pl-10 pr-4 py-3 bg-black/20 border border-white/10 rounded-xl text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/50 transition-all font-medium"
                 />
               </div>
+            </div>
 
-              {/* Password */}
-              <div>
-                <label className="block text-xs font-medium text-white/70 mb-1.5">
+            {/* Password Field */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label htmlFor="login-password" className="block text-xs font-semibold text-gray-300 uppercase tracking-wider">
                   Password
                 </label>
-                <div className="relative">
-                  <input
-                    id="login-password"
-                    type={showLoginPwd ? "text" : "password"}
-                    autoComplete="current-password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full px-4 py-2.5 pr-11 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowLoginPwd(!showLoginPwd)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
-                  >
-                    {showLoginPwd ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
               </div>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                  <Lock size={16} />
+                </span>
+                <input
+                  id="login-password"
+                  type={showLoginPwd ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="w-full pl-10 pr-11 py-3 bg-black/20 border border-white/10 rounded-xl text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/50 transition-all font-medium"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPwd(!showLoginPwd)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                >
+                  {showLoginPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
 
-              {/* Submit */}
-              <button
-                id="login-submit-btn"
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-500/20 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    Signing in…
-                  </>
-                ) : (
-                  <>
-                    <LogIn size={16} />
-                    Sign In
-                  </>
-                )}
-              </button>
-            </form>
+            {/* Submit Button */}
+            <button
+              id="login-submit-btn"
+              type="submit"
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 disabled:opacity-60 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin text-white" />
+                  Authenticating…
+                </>
+              ) : (
+                <>
+                  <LogIn size={16} />
+                  Sign In to Portal
+                </>
+              )}
+            </button>
+          </form>
 
+          <div className="mt-8 pt-6 border-t border-white/5 text-center">
+            <span className="text-xs text-gray-500">
+              Security Notice: Authorized access only.
+            </span>
           </div>
+
         </div>
 
-        <p className="text-center text-xs text-white/25 mt-6">
+        {/* Footer */}
+        <p className="text-center text-xs text-gray-600 mt-8">
           © 2026 Hearing Aid Lab (PTY) LTD · All rights reserved
         </p>
       </div>
     </div>
   );
 }
+

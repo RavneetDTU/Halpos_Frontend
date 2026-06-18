@@ -41,6 +41,7 @@ interface NavItem {
   label: string;
   icon: React.ReactNode;
   path?: string;
+  action?: () => void;
   adminOnly?: boolean;
   children?: NavItem[];
 }
@@ -112,7 +113,7 @@ const navItems: NavItem[] = [
       { label: "Add Purchase by CSV", icon: <FileText size={18} />, path: "/purchases/add-csv" },
       { label: "List Return Purchases", icon: <RotateCcw size={18} />, path: "/purchases/return" },
       { label: "List Expenses", icon: <ListOrdered size={18} />, path: "/purchases/expenses" },
-      { label: "Add Expense", icon: <PlusCircle size={18} />, path: "/purchases/add-expense" },
+      { label: "Add Expense", icon: <PlusCircle size={18} />, action: () => window.dispatchEvent(new Event("open-add-expense")) },
     ],
   },
   {
@@ -274,18 +275,28 @@ export function Sidebar() {
                     {item.children
                       .filter((child) => !child.adminOnly || isAdmin)
                       .map((child) => (
-                        <NavLink
-                          key={child.label}
-                          to={child.path || "#"}
-                          className={({ isActive }) =>
-                            `flex items-center gap-2 px-4 pl-10 py-1.5 text-xs transition-colors ${isActive
-                              ? "bg-blue-600 text-white"
-                              : "text-white/70 hover:bg-white/5 hover:text-white"
-                            }`
-                          }
-                        >
-                          <span>{child.label}</span>
-                        </NavLink>
+                        child.action ? (
+                          <button
+                            key={child.label}
+                            onClick={child.action}
+                            className="w-full flex items-center gap-2 px-4 pl-10 py-1.5 text-xs transition-colors text-white/70 hover:bg-white/5 hover:text-white text-left"
+                          >
+                            <span>{child.label}</span>
+                          </button>
+                        ) : (
+                          <NavLink
+                            key={child.label}
+                            to={child.path || "#"}
+                            className={({ isActive }) =>
+                              `flex items-center gap-2 px-4 pl-10 py-1.5 text-xs transition-colors ${isActive
+                                ? "bg-blue-600 text-white"
+                                : "text-white/70 hover:bg-white/5 hover:text-white"
+                              }`
+                            }
+                          >
+                            <span>{child.label}</span>
+                          </NavLink>
+                        )
                       ))}
                   </div>
                 )}

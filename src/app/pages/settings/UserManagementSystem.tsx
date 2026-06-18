@@ -192,7 +192,7 @@ export function UserManagementSystem() {
       // Load Metadata from localStorage
       const storedMetadata = localStorage.getItem(METADATA_KEY);
       const metadata = storedMetadata ? JSON.parse(storedMetadata) : {};
-      
+
       // Load Deleted Users
       const storedDeleted = localStorage.getItem(DELETED_USERS_KEY);
       const deletedIds = storedDeleted ? JSON.parse(storedDeleted) : [];
@@ -427,11 +427,10 @@ export function UserManagementSystem() {
       {/* Toast Alert */}
       {toast && (
         <div
-          className={`fixed top-6 right-6 z-[60] flex items-center gap-3 px-4 py-3.5 rounded-xl shadow-2xl border text-sm font-medium transition-all ${
-            toast.type === "success"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-              : "bg-rose-50 border-rose-200 text-rose-800"
-          }`}
+          className={`fixed top-6 right-6 z-[60] flex items-center gap-3 px-4 py-3.5 rounded-xl shadow-2xl border text-sm font-medium transition-all ${toast.type === "success"
+            ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+            : "bg-rose-50 border-rose-200 text-rose-800"
+            }`}
         >
           {toast.type === "success" ? (
             <CheckCircle2 size={16} className="text-emerald-600" />
@@ -462,19 +461,19 @@ export function UserManagementSystem() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {(Object.keys(LEVEL_CONFIG) as unknown as UserLevel[]).map((levelNum) => {
           const cfg = LEVEL_CONFIG[levelNum];
           return (
             <div
               key={levelNum}
-              className={`bg-white border rounded-2xl p-5 flex items-center justify-between shadow-sm border-l-4 ${cfg.cardClass}`}
+              className="bg-white border border-gray-200 rounded-2xl p-5 flex items-center justify-between shadow-sm"
             >
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Level {levelNum}</p>
-                <p className="text-3xl font-black text-gray-900 mt-2">{counts[levelNum] || 0}</p>
+                <p className="text-sm text-gray-500 mb-1">Level {levelNum}</p>
+                <p className={`text-2xl font-bold ${cfg.accentColor}`}>{counts[levelNum] || 0}</p>
               </div>
-              <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${cfg.bgClass}`}>
+              <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${cfg.bgClass}`}>
                 {cfg.badgeLabel}
               </span>
             </div>
@@ -638,11 +637,10 @@ export function UserManagementSystem() {
                       {/* Status */}
                       <td className="px-6 py-4">
                         <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                            u.status === "Active"
-                              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                              : "bg-gray-50 border-gray-200 text-gray-500"
-                          }`}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${u.status === "Active"
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                            : "bg-gray-50 border-gray-200 text-gray-500"
+                            }`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full ${u.status === "Active" ? "bg-emerald-500" : "bg-gray-400"}`} />
                           {u.status}
@@ -653,10 +651,10 @@ export function UserManagementSystem() {
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {u.created_at
                           ? new Date(u.created_at).toLocaleDateString("en-ZA", {
-                              year: "numeric",
-                              month: "2-digit",
-                              day: "2-digit",
-                            })
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                          })
                           : "—"}
                       </td>
 
@@ -737,11 +735,10 @@ export function UserManagementSystem() {
                   setIsEditingGuidelines(true);
                 }
               }}
-              className={`flex items-center justify-center gap-1.5 px-4 py-2 border rounded-xl text-xs font-bold transition-all shadow-sm ${
-                isEditingGuidelines
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"
-                  : "bg-white hover:bg-gray-50 border-gray-200 text-gray-700"
-              }`}
+              className={`flex items-center justify-center gap-1.5 px-4 py-2 border rounded-xl text-xs font-bold transition-all shadow-sm ${isEditingGuidelines
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"
+                : "bg-white hover:bg-gray-50 border-gray-200 text-gray-700"
+                }`}
             >
               {isEditingGuidelines ? (
                 <>
@@ -931,11 +928,10 @@ export function UserManagementSystem() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Min. 12 characters"
-                      className={`w-full px-4 py-2.5 pr-10 border rounded-xl text-sm focus:outline-none focus:ring-2 bg-white transition-colors ${
-                        password.length > 0 && password.length < 12
-                          ? "border-red-300 focus:ring-red-500/20"
-                          : "border-gray-200 focus:ring-blue-500/20"
-                      }`}
+                      className={`w-full px-4 py-2.5 pr-10 border rounded-xl text-sm focus:outline-none focus:ring-2 bg-white transition-colors ${password.length > 0 && password.length < 12
+                        ? "border-red-300 focus:ring-red-500/20"
+                        : "border-gray-200 focus:ring-blue-500/20"
+                        }`}
                     />
                     <button
                       type="button"
@@ -952,21 +948,19 @@ export function UserManagementSystem() {
                         {[1, 2, 3, 4].map((i) => (
                           <div
                             key={i}
-                            className={`h-1 flex-1 rounded-full transition-all ${
-                              password.length >= i * 3
-                                ? password.length < 12
-                                  ? "bg-red-400"
-                                  : password.length < 16
+                            className={`h-1 flex-1 rounded-full transition-all ${password.length >= i * 3
+                              ? password.length < 12
+                                ? "bg-red-400"
+                                : password.length < 16
                                   ? "bg-amber-400"
                                   : "bg-emerald-500"
-                                : "bg-gray-200"
-                            }`}
+                              : "bg-gray-200"
+                              }`}
                           />
                         ))}
                       </div>
-                      <p className={`text-[10px] font-medium ${
-                        password.length < 12 ? "text-red-500" : "text-emerald-600"
-                      }`}>
+                      <p className={`text-[10px] font-medium ${password.length < 12 ? "text-red-500" : "text-emerald-600"
+                        }`}>
                         {password.length < 12
                           ? `${12 - password.length} more character${12 - password.length !== 1 ? "s" : ""} needed`
                           : "Password meets minimum requirement ✓"}
@@ -1047,11 +1041,10 @@ export function UserManagementSystem() {
                   <button
                     key={levelNum}
                     onClick={() => handleChangeLevel(showLevelModal.id, levelNum)}
-                    className={`w-full p-4 rounded-xl border-2 flex items-center justify-between text-left transition-all ${
-                      isCurrent
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-gray-100 text-gray-600 hover:border-gray-200 hover:bg-gray-50/50"
-                    }`}
+                    className={`w-full p-4 rounded-xl border-2 flex items-center justify-between text-left transition-all ${isCurrent
+                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      : "border-gray-100 text-gray-600 hover:border-gray-200 hover:bg-gray-50/50"
+                      }`}
                   >
                     <div>
                       <p className="text-sm font-bold">{cfg.label}</p>
