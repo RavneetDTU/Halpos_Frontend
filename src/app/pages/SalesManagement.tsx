@@ -7,17 +7,6 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { StatusBadge } from "../components/ui/StatusBadge";
-<<<<<<< HEAD
-import {
-  DollarSign,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Users,
-} from "lucide-react";
-=======
->>>>>>> main
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ViewPaymentModal } from "../components/modals/ViewPaymentModal";
 import { AddPaymentModal } from "../components/modals/AddPaymentModal";
@@ -183,28 +172,9 @@ export function SalesManagement() {
   // ── Table state ───────────────────────────────────────────────────────────
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [openActionMenu, setOpenActionMenu] = useState<number | null>(null);
-<<<<<<< HEAD
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [activeSale, setActiveSale] = useState<SaleRecord | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [warehouseFilter, setWarehouseFilter] = useState("All Warehouses");
-  const [search, setSearch] = useState("");
-
-  // Client-side filter (warehouse + search)
-  const filteredSales = salesData.filter((s) => {
-    const matchWarehouse =
-      warehouseFilter === "All Warehouses" || s.warehouse === warehouseFilter;
-    const q = search.toLowerCase();
-    const matchSearch =
-      !q ||
-      (s.customerName ?? "").toLowerCase().includes(q) ||
-      (s.customerSurname ?? "").toLowerCase().includes(q) ||
-      (s.reference ?? "").toLowerCase().includes(q) ||
-      (s.biller ?? "").toLowerCase().includes(q);
-    return matchWarehouse && matchSearch;
-  });
-=======
->>>>>>> main
   const [viewPaymentModal, setViewPaymentModal] = useState<{
     isOpen: boolean;
     saleData: any;
