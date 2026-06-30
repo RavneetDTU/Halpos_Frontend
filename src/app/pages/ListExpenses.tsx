@@ -1,8 +1,10 @@
 import { Upload } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { SearchAutosuggest } from "../components/ui/SearchAutosuggest";
 
 export function ListExpenses() {
   const [showAddExpense, setShowAddExpense] = useState(false);
+  const [search, setSearch] = useState("");
 
   const [openActionMenu, setOpenActionMenu] = useState<number | null>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
@@ -53,6 +55,27 @@ export function ListExpenses() {
     ...d,
     id: i + 1,
   }));
+
+  // Build autosuggestions from expense fields
+  const expenseSuggestions = Array.from(
+    new Set([
+      ...expensesData.map((e) => e.reference),
+      ...expensesData.map((e) => e.warehouse),
+      ...expensesData.map((e) => e.category),
+      ...expensesData.map((e) => e.createdBy),
+    ])
+  ).sort();
+
+  // Filter by search
+  const filteredExpenses = search.trim()
+    ? expensesData.filter((e) =>
+      e.reference.toLowerCase().includes(search.toLowerCase()) ||
+      e.warehouse.toLowerCase().includes(search.toLowerCase()) ||
+      e.category.toLowerCase().includes(search.toLowerCase()) ||
+      e.note.toLowerCase().includes(search.toLowerCase()) ||
+      e.createdBy.toLowerCase().includes(search.toLowerCase())
+    )
+    : expensesData;
 
   const toggleActionMenu = (id: number, e: React.MouseEvent<HTMLButtonElement>) => {
     if (openActionMenu === id) { setOpenActionMenu(null); setMenuPos(null); return; }
@@ -152,13 +175,13 @@ export function ListExpenses() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
-                Search:
-              </span>
-
-              <input
-                type="text"
-                className="w-48 rounded border border-gray-300 px-2 py-1 text-sm"
+              <SearchAutosuggest
+                value={search}
+                onChange={setSearch}
+                suggestions={expenseSuggestions}
+                placeholder="Search expenses..."
+                inputClassName="!py-1 !rounded !border-gray-300 !text-sm"
+                className="w-48"
               />
             </div>
           </div>
@@ -202,7 +225,7 @@ export function ListExpenses() {
               </thead>
 
               <tbody className="divide-y divide-gray-200">
-                {expensesData.map((item, index) => (
+                {filteredExpenses.map((item, index) => (
                   <tr
                     key={index}
                     className={
@@ -280,136 +303,136 @@ export function ListExpenses() {
       </div>
 
       {/* Add Expense Modal */}
-{showAddExpense && (
-  <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
-    <div className="w-full max-w-2xl overflow-hidden rounded bg-white shadow-2xl">
+      {showAddExpense && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-2xl overflow-hidden rounded bg-white shadow-2xl">
 
-      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-4">
-        <h3 className="text-lg font-semibold text-gray-800">
-          ADD EXPENSE
-        </h3>
+            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                ADD EXPENSE
+              </h3>
 
-        <button
-          onClick={() => setShowAddExpense(false)}
-          className="text-4xl leading-none text-gray-400 hover:text-gray-600"
-        >
-          ×
-        </button>
-      </div>
-
-      <div className="p-4">
-        <p className="mb-5 text-sm text-gray-600">
-          Please fill in the information below.
-          The field labels marked with * are required input fields.
-        </p>
-
-        <div className="space-y-4">
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Date *
-            </label>
-
-            <input
-              type="text"
-              defaultValue="14/05/2026 12:26"
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Reference
-            </label>
-
-            <input
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Category
-            </label>
-
-            <select className="w-full rounded border border-gray-300 px-3 py-2 text-sm">
-              <option>Select Category</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Warehouse
-            </label>
-
-            <select className="w-full rounded border border-gray-300 px-3 py-2 text-sm">
-              <option>Select Warehouse</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Amount *
-            </label>
-
-            <input
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Attachment *
-            </label>
-
-            <div className="flex">
-              <input
-                className="flex-1 border border-gray-300 px-3 py-2 text-sm"
-              />
-
-              <button className="flex items-center gap-2 bg-blue-500 px-4 text-white">
-                <Upload size={14}/>
-                Browse...
+              <button
+                onClick={() => setShowAddExpense(false)}
+                className="text-4xl leading-none text-gray-400 hover:text-gray-600"
+              >
+                ×
               </button>
             </div>
-          </div>
 
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              Note *
-            </label>
+            <div className="p-4">
+              <p className="mb-5 text-sm text-gray-600">
+                Please fill in the information below.
+                The field labels marked with * are required input fields.
+              </p>
 
-            <div className="rounded border border-gray-300">
+              <div className="space-y-4">
 
-              <div className="flex gap-3 border-b bg-gray-50 px-3 py-2 text-xs">
-                <button>B</button>
-                <button>I</button>
-                <button>U</button>
-                <button>≡</button>
-                <button>≣</button>
-                <button>🔗</button>
-                <button>{"</>"}</button>
+                <div>
+                  <label className="mb-1 block text-sm font-medium">
+                    Date *
+                  </label>
+
+                  <input
+                    type="text"
+                    defaultValue="14/05/2026 12:26"
+                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium">
+                    Reference
+                  </label>
+
+                  <input
+                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium">
+                    Category
+                  </label>
+
+                  <select className="w-full rounded border border-gray-300 px-3 py-2 text-sm">
+                    <option>Select Category</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium">
+                    Warehouse
+                  </label>
+
+                  <select className="w-full rounded border border-gray-300 px-3 py-2 text-sm">
+                    <option>Select Warehouse</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium">
+                    Amount *
+                  </label>
+
+                  <input
+                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium">
+                    Attachment *
+                  </label>
+
+                  <div className="flex">
+                    <input
+                      className="flex-1 border border-gray-300 px-3 py-2 text-sm"
+                    />
+
+                    <button className="flex items-center gap-2 bg-blue-500 px-4 text-white">
+                      <Upload size={14} />
+                      Browse...
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium">
+                    Note *
+                  </label>
+
+                  <div className="rounded border border-gray-300">
+
+                    <div className="flex gap-3 border-b bg-gray-50 px-3 py-2 text-xs">
+                      <button>B</button>
+                      <button>I</button>
+                      <button>U</button>
+                      <button>≡</button>
+                      <button>≣</button>
+                      <button>🔗</button>
+                      <button>{"</>"}</button>
+                    </div>
+
+                    <textarea
+                      rows={6}
+                      className="w-full resize-none px-3 py-3 outline-none"
+                    />
+                  </div>
+                </div>
+
               </div>
 
-              <textarea
-                rows={6}
-                className="w-full resize-none px-3 py-3 outline-none"
-              />
+              <div className="mt-6 flex justify-end">
+                <button className="rounded bg-blue-600 px-5 py-2 text-white hover:bg-blue-700">
+                  Add Expense
+                </button>
+              </div>
+
             </div>
           </div>
-
         </div>
-
-        <div className="mt-6 flex justify-end">
-          <button className="rounded bg-blue-600 px-5 py-2 text-white hover:bg-blue-700">
-            Add Expense
-          </button>
-        </div>
-
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
       {/* Expense Note Modal */}
       {expenseNoteModal && (

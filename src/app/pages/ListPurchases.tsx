@@ -1,15 +1,18 @@
-import { StatusBadge } from "../components/ui/StatusBadge";
-import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  Search, RefreshCw, Loader2, AlertCircle, ChevronLeft, ChevronRight,
+  AlertCircle, ChevronLeft, ChevronRight,
+  Loader2,
+  RefreshCw,
+  Search,
 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AddPaymentModal } from "../components/modals/AddPaymentModal";
+import { DeleteConfirmModal } from "../components/modals/DeleteConfirmModal";
+import { EmailSaleModal } from "../components/modals/EmailSaleModal";
 import { ViewDetailsModal } from "../components/modals/ViewDetailsModal";
 import { ViewPaymentModal } from "../components/modals/ViewPaymentModal";
-import { AddPaymentModal } from "../components/modals/AddPaymentModal";
-import { EmailSaleModal } from "../components/modals/EmailSaleModal";
-import { DeleteConfirmModal } from "../components/modals/DeleteConfirmModal";
-import { NotWorking } from "./NotWorking";
+import { StatusBadge } from "../components/ui/StatusBadge";
 import { apiFetch } from "../lib/api";
+import { NotWorking } from "./NotWorking";
 
 // ─── Type ─────────────────────────────────────────────────────────────────────
 interface PurchaseRecord {
@@ -39,6 +42,8 @@ function getStatusVariant(
     case "ordered":
     case "preordered":
       return "info";
+    case "in transit":
+      return "info";
     case "pending":
       return "warning";
     case "cancelled":
@@ -62,48 +67,77 @@ function fmtAmt(val: number | string | undefined): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export function ListPurchases() {
-  // ── API data ──────────────────────────────────────────────────────────────
+  // ── API and Pagination state ───────────────────────────────────────────────
   const [purchaseData, setPurchaseData] = useState<PurchaseRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
+
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search]);
 
   const loadPurchases = useCallback(async () => {
     setIsLoading(true);
     setFetchError("");
     try {
-      const raw = await apiFetch<unknown>("/purchases");
-      console.log("[GET /purchases] raw:", raw);
-      let records: PurchaseRecord[] = [];
-      if (Array.isArray(raw)) {
-        records = raw as PurchaseRecord[];
-      } else if (raw && typeof raw === "object") {
-        const obj = raw as Record<string, unknown>;
-        const candidate = obj.data ?? obj.items ?? obj.purchases ?? obj.results;
-        if (Array.isArray(candidate)) records = candidate as PurchaseRecord[];
+      let url = `/purchases?page=${page}&limit=${limit}`;
+      // Only send non-numeric search terms to the backend.
+      // Purely numeric input (phone numbers) is handled by the client-side filter below,
+      // because the backend does not search supplierPhone.
+      const isPhoneSearch = /^\d+$/.test(debouncedSearch.trim());
+      if (debouncedSearch.trim() && !isPhoneSearch) {
+        url += `&search=${encodeURIComponent(debouncedSearch.trim())}`;
       }
+      const raw = await apiFetch<unknown>(url);
+      let records: PurchaseRecord[] = [];
+      let total = 0;
+      let pages = 1;
+
+      if (raw && typeof raw === "object") {
+        const obj = raw as Record<string, unknown>;
+        const candidate = obj.purchases ?? obj.data ?? obj.items ?? obj.results;
+        if (Array.isArray(candidate)) records = candidate as PurchaseRecord[];
+        else if (Array.isArray(raw)) records = raw as PurchaseRecord[];
+        total = typeof obj.total === "number" ? obj.total : records.length;
+        pages = typeof obj.totalPages === "number" ? obj.totalPages : Math.ceil(total / limit);
+      } else if (Array.isArray(raw)) {
+        records = raw as PurchaseRecord[];
+        total = records.length;
+        pages = Math.ceil(total / limit);
+      }
+
+      // Sort by date descending so that the newest purchases show at the top on the current page
+      records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
       setPurchaseData(records);
+      setTotalRecords(total);
+      setTotalPages(Math.max(1, pages));
     } catch (err: unknown) {
       setFetchError(err instanceof Error ? err.message : "Failed to load purchases");
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [page, limit, debouncedSearch]);
 
   useEffect(() => { loadPurchases(); }, [loadPurchases]);
 
   // ── Table state ───────────────────────────────────────────────────────────
-  const [search, setSearch] = useState("");
   const [openActionMenu, setOpenActionMenu] = useState<number | null>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  const filteredData = purchaseData.filter((p) => {
-    const q = search.toLowerCase();
-    return !q ||
-      (p.supplier ?? "").toLowerCase().includes(q) ||
-      (p.reference ?? "").toLowerCase().includes(q) ||
-      (p.notes ?? "").toLowerCase().includes(q);
-  });
 
   // ── Modals ────────────────────────────────────────────────────────────────
   const [viewDetailsModal, setViewDetailsModal] = useState<{ isOpen: boolean; saleData: any }>({ isOpen: false, saleData: null });
@@ -178,6 +212,22 @@ export function ListPurchases() {
           </a>
         </div>
 
+        {/* Show / per-page selector */}
+        <div className="px-4 pt-3 flex items-center gap-2">
+          <span className="text-sm text-gray-600">Show</span>
+          <select
+            value={limit}
+            onChange={(e) => { setLimit(parseInt(e.target.value)); setPage(1); }}
+            className="px-3 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm bg-white"
+          >
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          <span className="text-sm text-gray-600">records</span>
+        </div>
+
         <div className="p-4">
           {/* Search + Refresh */}
           <div className="flex items-center justify-between mb-4">
@@ -193,7 +243,7 @@ export function ListPurchases() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Search supplier, reference..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9 pr-3 py-1.5 border border-gray-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 w-64"
@@ -244,7 +294,7 @@ export function ListPurchases() {
                   </tr>
                 )}
                 {/* Empty */}
-                {!isLoading && !fetchError && filteredData.length === 0 && (
+                {!isLoading && !fetchError && purchaseData.length === 0 && (
                   <tr>
                     <td colSpan={12} className="px-4 py-16 text-center text-gray-400 text-sm">
                       No purchases found
@@ -252,7 +302,17 @@ export function ListPurchases() {
                   </tr>
                 )}
                 {/* Data rows */}
-                {!isLoading && !fetchError && filteredData.map((purchase, index) => (
+                {!isLoading && !fetchError && purchaseData
+                  .filter((purchase) => {
+                    if (!debouncedSearch.trim()) return true;
+                    const q = debouncedSearch.trim().toLowerCase();
+                    return (
+                      (purchase.supplier ?? "").toLowerCase().includes(q) ||
+                      (purchase.reference ?? "").toLowerCase().includes(q) ||
+                      (purchase.supplierPhone ?? "").toLowerCase().includes(q)
+                    );
+                  })
+                  .map((purchase, index) => (
                   <tr
                     key={purchase.id}
                     className={`hover:bg-gray-100 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
@@ -305,23 +365,58 @@ export function ListPurchases() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                  ))
+                }
               </tbody>
             </table>
           </div>
 
-          {/* Pagination info */}
+          {/* Pagination */}
           <div className="flex items-center justify-between mt-4">
             <div className="text-sm text-gray-600">
-              Showing <span className="font-medium">{filteredData.length}</span> of{" "}
-              <span className="font-medium">{purchaseData.length}</span> results
+              Showing{" "}
+              <span className="font-medium">{purchaseData.length > 0 ? (page - 1) * limit + 1 : 0}</span>{" "}
+              to{" "}
+              <span className="font-medium">{Math.min(page * limit, totalRecords)}</span>{" "}
+              of{" "}
+              <span className="font-medium">{totalRecords}</span>{" "}
+              results
             </div>
             <div className="flex gap-1 items-center">
-              <button className="p-1.5 rounded border border-gray-200 hover:bg-white transition-colors text-sm">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="p-1.5 rounded border border-gray-200 hover:bg-white transition-colors text-sm disabled:opacity-50"
+              >
                 <ChevronLeft size={14} />
               </button>
-              <button className="px-3 py-1 rounded bg-blue-600 text-white text-xs">1</button>
-              <button className="p-1.5 rounded border border-gray-200 hover:bg-white transition-colors text-sm">
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                .map((p, idx, arr) => {
+                  const prev = arr[idx - 1];
+                  const showEllipsis = prev && p - prev > 1;
+                  return (
+                    <span key={p} className="flex items-center gap-1">
+                      {showEllipsis && <span className="text-gray-400 text-xs">...</span>}
+                      <button
+                        onClick={() => setPage(p)}
+                        className={`px-3 py-1 rounded text-xs font-medium transition-all ${page === p
+                          ? "bg-blue-600 text-white"
+                          : "border border-gray-200 hover:bg-white text-gray-600 bg-white"
+                          }`}
+                      >
+                        {p}
+                      </button>
+                    </span>
+                  );
+                })}
+
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="p-1.5 rounded border border-gray-200 hover:bg-white transition-colors text-sm disabled:opacity-50"
+              >
                 <ChevronRight size={14} />
               </button>
             </div>

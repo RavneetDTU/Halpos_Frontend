@@ -18,6 +18,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { apiFetch } from "../lib/api";
+import { SearchAutosuggest } from "../components/ui/SearchAutosuggest";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface QuoteRecord {
@@ -251,16 +252,18 @@ export function ListQuotations() {
         <div className="grid grid-cols-3 gap-3">
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1.5">Search</label>
-            <div className="relative">
-              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-                placeholder="Search by quote # or customer name…"
-                className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-violet-500 bg-gray-50"
-              />
-            </div>
+            <SearchAutosuggest
+              value={search}
+              onChange={(v) => { setSearch(v); setCurrentPage(1); }}
+              suggestions={Array.from(
+                new Set<string>([
+                  ...quotes.map((q) => q.quoteNumber),
+                  ...quotes.map((q) => q.customerName),
+                  ...quotes.map((q) => q.warehouse),
+                ])
+              ).filter(Boolean).sort()}
+              placeholder="Search by quote # or customer name…"
+            />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1.5">Warehouse</label>

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
+import { SearchAutosuggest } from "../components/ui/SearchAutosuggest";
 
 export function CashupListing() {
+  const [search, setSearch] = useState("");
   const cashupData = [
     {
       id: 7,
@@ -93,6 +95,20 @@ export function CashupListing() {
       creditCard: "0",
     },
   ];
+
+  // Build suggestions and filter
+  const cashupSuggestions = Array.from(
+    new Set(cashupData.map((c) => c.warehouse))
+  ).sort();
+
+  const filteredCashup = search.trim()
+    ? cashupData.filter(
+        (c) =>
+          c.warehouse.toLowerCase().includes(search.toLowerCase()) ||
+          String(c.id).includes(search) ||
+          c.branchSlip.toLowerCase().includes(search.toLowerCase())
+      )
+    : cashupData;
 
   const [openActionMenu, setOpenActionMenu] = useState<
     number | null
@@ -220,13 +236,13 @@ export function CashupListing() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
-                Search:
-              </span>
-
-              <input
-                type="text"
-                className="w-48 rounded border border-gray-300 px-2 py-1 text-sm"
+              <SearchAutosuggest
+                value={search}
+                onChange={setSearch}
+                suggestions={cashupSuggestions}
+                placeholder="Search warehouse..."
+                inputClassName="!py-1 !rounded !border-gray-300 !text-sm"
+                className="w-48"
               />
             </div>
           </div>
@@ -270,7 +286,7 @@ export function CashupListing() {
               </thead>
 
               <tbody className="divide-y divide-gray-200">
-                {cashupData.map((item, index) => (
+                {filteredCashup.map((item, index) => (
                   <tr
                     key={index}
                     className={

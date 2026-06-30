@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { NotWorking } from "./NotWorking";
+import { SearchAutosuggest } from "../components/ui/SearchAutosuggest";
 
 export function PurchaseOverview() {
   const [notWorkingModal, setNotWorkingModal] = useState(false);
+  const [search, setSearch] = useState("");
 
   const overviewData = [
     {
@@ -110,6 +112,21 @@ export function PurchaseOverview() {
     },
   ];
 
+  const overviewSuggestions = Array.from(
+    new Set([
+      ...overviewData.map((d) => d.problemsCode),
+      ...overviewData.map((d) => d.productStatus),
+    ])
+  ).sort();
+
+  const filteredOverview = search.trim()
+    ? overviewData.filter(
+        (d) =>
+          d.problemsCode.toLowerCase().includes(search.toLowerCase()) ||
+          d.productStatus.toLowerCase().includes(search.toLowerCase())
+      )
+    : overviewData;
+
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
       <div className="bg-white rounded border border-gray-300">
@@ -144,13 +161,13 @@ export function PurchaseOverview() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
-                Search:
-              </span>
-
-              <input
-                type="text"
-                className="px-2 py-1 border border-gray-300 rounded text-sm w-48"
+              <SearchAutosuggest
+                value={search}
+                onChange={setSearch}
+                suggestions={overviewSuggestions}
+                placeholder="Search product code or name..."
+                inputClassName="!py-1 !rounded !border-gray-300 !text-sm"
+                className="w-48"
               />
             </div>
           </div>
@@ -194,7 +211,7 @@ export function PurchaseOverview() {
               </thead>
 
               <tbody className="divide-y divide-gray-200">
-                {overviewData.map((item, index) => (
+                {filteredOverview.map((item, index) => (
                   <tr
                     key={index}
                     className={

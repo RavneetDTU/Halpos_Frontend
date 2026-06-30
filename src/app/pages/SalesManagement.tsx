@@ -1,23 +1,23 @@
 import {
-  Search,
+  AlertCircle,
   ChevronLeft,
   ChevronRight,
   Loader2,
-  AlertCircle,
   RefreshCw,
+  Search,
 } from "lucide-react";
-import { StatusBadge } from "../components/ui/StatusBadge";
-import { useState, useEffect, useCallback, useRef } from "react";
-import { ViewPaymentModal } from "../components/modals/ViewPaymentModal";
-import { AddPaymentModal } from "../components/modals/AddPaymentModal";
-import { ViewDetailsModal } from "../components/modals/ViewDetailsModal";
-import { ReturnSaleModal } from "../components/modals/ReturnSaleModal";
-import { EmailSaleModal } from "../components/modals/EmailSaleModal";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AddDeliveryModal } from "../components/modals/AddDeliveryModal";
-import { ProposeRefundModal } from "../components/modals/ProposeRefundModal";
+import { AddPaymentModal } from "../components/modals/AddPaymentModal";
 import { DeleteConfirmModal } from "../components/modals/DeleteConfirmModal";
-import { NotWorking } from "./NotWorking";
+import { EmailSaleModal } from "../components/modals/EmailSaleModal";
+import { ProposeRefundModal } from "../components/modals/ProposeRefundModal";
+import { ReturnSaleModal } from "../components/modals/ReturnSaleModal";
+import { ViewDetailsModal } from "../components/modals/ViewDetailsModal";
+import { ViewPaymentModal } from "../components/modals/ViewPaymentModal";
+import { StatusBadge } from "../components/ui/StatusBadge";
 import { apiFetch } from "../lib/api";
+import { NotWorking } from "./NotWorking";
 
 // ─── API type (matches GET /sales response shape) ────────────────────────────
 interface SaleRecord {
@@ -76,8 +76,6 @@ export function SalesManagement() {
   const [limit, setLimit] = useState(10);
   const [totalRecords, setTotalRecords] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  // Track whether we've done the initial auto-jump to last page
-  const initialLoadDone = useRef(false);
 
   const [warehouseFilter, setWarehouseFilter] = useState("All Warehouses");
   const [search, setSearch] = useState("");
@@ -88,7 +86,6 @@ export function SalesManagement() {
     const handler = setTimeout(() => {
       setDebouncedSearch(search);
       setPage(1);
-      initialLoadDone.current = false; // re-enable auto-jump on new search
     }, 300);
     return () => clearTimeout(handler);
   }, [search]);
@@ -129,20 +126,8 @@ export function SalesManagement() {
         pages = Math.ceil(total / limit);
       }
 
-      // On first load (page 1, no search/filter), jump to the last page so newest
-      // sales (highest IDs) are immediately visible. The backend returns oldest-first.
-      if (!initialLoadDone.current && page === 1 && pages > 1 && !debouncedSearch.trim() && warehouseFilter === "All Warehouses") {
-        initialLoadDone.current = true;
-        setTotalRecords(total);
-        setTotalPages(pages);
-        setPage(pages); // triggers another fetch for the last page
-        setIsLoadingSales(false);
-        return;
-      }
-      initialLoadDone.current = true;
-
-      // Sort by ID descending so that the newest sales show at the top on the current page
-      records.sort((a, b) => b.id - a.id);
+      // Sort by date descending so that the newest sales show at the top on the current page
+      records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
       setSalesData(records);
       setTotalRecords(total);
@@ -161,7 +146,6 @@ export function SalesManagement() {
   const handleWarehouseFilterChange = (val: string) => {
     setWarehouseFilter(val);
     setPage(1);
-    initialLoadDone.current = false; // allow auto-jump again if switching back to All Warehouses
   };
 
   const handleLimitChange = (val: number) => {
@@ -454,7 +438,7 @@ export function SalesManagement() {
                 <th className="px-3 py-2 text-left text-xs font-medium">
                   Customer Phone
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-medium">
+                <th className="px-3 py-2 text-left text-xs font-medium w-40 min-w-[160px] max-w-[160px]">
                   Customer Name
                 </th>
                 <th className="px-3 py-2 text-left text-xs font-medium">
@@ -544,7 +528,7 @@ export function SalesManagement() {
                   <td className="px-3 py-3 text-xs text-gray-600">
                     {sale.customerPhone}
                   </td>
-                  <td className="px-3 py-3 text-xs text-gray-900">
+                  <td className="px-3 py-3 text-xs text-gray-900 w-40 min-w-[160px] max-w-[160px] break-words">
                     {sale.customerName}
                   </td>
                   <td className="px-3 py-3 text-xs text-gray-600">

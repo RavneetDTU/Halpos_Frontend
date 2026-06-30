@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { SearchAutosuggest } from "../components/ui/SearchAutosuggest";
 
 interface StockItem {
   id: number;
@@ -40,6 +41,14 @@ const stockData: StockItem[] = [
 
 const warehouses = ["All Warehouses", "HEAD OFFICE", "BRANCH 1", "BRANCH 2"];
 const categories = ["All Categories", "Hearing Aids", "Accessories", "Batteries", "Services"];
+
+// Suggestions built once from static stock data
+const stockSearchSuggestions = Array.from(
+  new Set([
+    ...stockData.map((i) => i.name),
+    ...stockData.map((i) => i.sku),
+  ])
+).sort();
 
 type StockLevel = "all" | "in-stock" | "low-stock" | "out-of-stock";
 
@@ -149,16 +158,13 @@ export function StockTable() {
 
       {/* Filters */}
       <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
-          <input
-            type="text"
-            placeholder="Search product name or SKU..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-          />
-        </div>
+        <SearchAutosuggest
+          value={search}
+          onChange={setSearch}
+          suggestions={stockSearchSuggestions}
+          placeholder="Search product name or SKU..."
+          className="flex-1 min-w-48"
+        />
         <select
           value={warehouseFilter}
           onChange={(e) => setWarehouseFilter(e.target.value)}

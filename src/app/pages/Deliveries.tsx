@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { DeleteConfirmModal } from "../components/modals/DeleteConfirmModal";
+import { SearchAutosuggest } from "../components/ui/SearchAutosuggest";
 
 export function Deliveries() {
   const [openActionMenu, setOpenActionMenu] = useState<number | null>(null);
   const [deleteConfirmModal, setDeleteConfirmModal] = useState(false);
+  const [search, setSearch] = useState("");
 
   const deliveriesData = [
     {
@@ -43,6 +45,23 @@ export function Deliveries() {
     },
   ].map((d, i) => ({ ...d, id: i + 1 }));
 
+  const deliverySuggestions = Array.from(
+    new Set([
+      ...deliveriesData.map((d) => d.customer),
+      ...deliveriesData.map((d) => d.reference),
+      ...deliveriesData.map((d) => d.saleReference),
+    ])
+  ).sort();
+
+  const filteredDeliveries = search.trim()
+    ? deliveriesData.filter(
+        (d) =>
+          d.customer.toLowerCase().includes(search.toLowerCase()) ||
+          d.reference.toLowerCase().includes(search.toLowerCase()) ||
+          d.saleReference.toLowerCase().includes(search.toLowerCase())
+      )
+    : deliveriesData;
+
   const toggleActionMenu = (id: number) => setOpenActionMenu(prev => prev === id ? null : id);
   const handleDeleteDelivery = () => setDeleteConfirmModal(true);
   const confirmDeleteDelivery = () => { console.log('Deleted'); setOpenActionMenu(null); };
@@ -79,10 +98,13 @@ export function Deliveries() {
               <span className="text-sm text-gray-600">entries</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Search:</span>
-              <input
-                type="text"
-                className="px-2 py-1 border border-gray-300 rounded text-sm w-48"
+              <SearchAutosuggest
+                value={search}
+                onChange={setSearch}
+                suggestions={deliverySuggestions}
+                placeholder="Search customer, reference..."
+                inputClassName="py-1 rounded border-gray-300 text-sm"
+                className="w-48"
               />
             </div>
           </div>
@@ -101,7 +123,7 @@ export function Deliveries() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {deliveriesData.map((delivery, index) => (
+                {filteredDeliveries.map((delivery, index) => (
                   <tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                     <td className="px-3 py-2 text-xs">{delivery.date}</td>
                     <td className="px-3 py-2 text-xs text-blue-600">{delivery.reference}</td>
