@@ -1,4 +1,9 @@
+import { useState } from "react";
+import { SearchAutosuggest } from "../components/ui/SearchAutosuggest";
+
 export function ListReturnPurchases() {
+  const [search, setSearch] = useState("");
+
   const returnPurchasesData = [
     {
       date: "27/11/2024 11:08:00",
@@ -34,6 +39,23 @@ export function ListReturnPurchases() {
     },
   ];
 
+  const returnPurchaseSuggestions = Array.from(
+    new Set([
+      ...returnPurchasesData.map((d) => d.reference),
+      ...returnPurchasesData.map((d) => d.purchaseReference),
+      ...returnPurchasesData.map((d) => d.supplier),
+    ])
+  ).sort();
+
+  const filteredReturnPurchases = search.trim()
+    ? returnPurchasesData.filter(
+        (d) =>
+          d.reference.toLowerCase().includes(search.toLowerCase()) ||
+          d.purchaseReference.toLowerCase().includes(search.toLowerCase()) ||
+          d.supplier.toLowerCase().includes(search.toLowerCase())
+      )
+    : returnPurchasesData;
+
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
       <div className="bg-white rounded border border-gray-300">
@@ -56,10 +78,13 @@ export function ListReturnPurchases() {
               <span className="text-sm text-gray-600">entries</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Search:</span>
-              <input
-                type="text"
-                className="px-2 py-1 border border-gray-300 rounded text-sm w-48"
+              <SearchAutosuggest
+                value={search}
+                onChange={setSearch}
+                suggestions={returnPurchaseSuggestions}
+                placeholder="Search reference, supplier..."
+                inputClassName="!py-1 !rounded !border-gray-300 !text-sm"
+                className="w-48"
               />
             </div>
           </div>
@@ -78,7 +103,7 @@ export function ListReturnPurchases() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {returnPurchasesData.map((item, index) => (
+                {filteredReturnPurchases.map((item, index) => (
                   <tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                     <td className="px-3 py-2 text-xs">{item.date}</td>
                     <td className="px-3 py-2 text-xs text-blue-600">{item.reference}</td>

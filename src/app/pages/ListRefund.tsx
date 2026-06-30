@@ -4,6 +4,7 @@ import { DeleteConfirmModal } from "../components/modals/DeleteConfirmModal";
 import { ProcessModal } from "../components/modals/ProcessModal";
 import { ViewDetailsModal } from "../components/modals/ViewDetailsModal";
 import { StatusBadge } from "../components/ui/StatusBadge";
+import { SearchAutosuggest } from "../components/ui/SearchAutosuggest";
 
 const refundData = [
   {
@@ -62,6 +63,26 @@ export function ListRefund() {
   const [deleteConfirmModal, setDeleteConfirmModal] = useState(false);
   const [approveModal, setApproveModal] = useState(false);
   const [rejectModal, setRejectModal] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const refundSuggestions = Array.from(
+    new Set([
+      ...refundData.map((r) => r.customerName),
+      ...refundData.map((r) => r.customerSurname),
+      ...refundData.map((r) => r.biller),
+      ...refundData.map((r) => r.reference),
+    ])
+  ).sort();
+
+  const filteredRefunds = search.trim()
+    ? refundData.filter(
+        (r) =>
+          r.customerName.toLowerCase().includes(search.toLowerCase()) ||
+          r.customerSurname.toLowerCase().includes(search.toLowerCase()) ||
+          r.biller.toLowerCase().includes(search.toLowerCase()) ||
+          r.reference.toLowerCase().includes(search.toLowerCase())
+      )
+    : refundData;
 
   const toggleRow = (id: number) => {
     setSelectedRows(prev =>
@@ -197,14 +218,14 @@ export function ListRefund() {
             <span className="text-sm text-gray-600">records</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="pl-9 pr-3 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm w-64"
-              />
-            </div>
+            <SearchAutosuggest
+              value={search}
+              onChange={setSearch}
+              suggestions={refundSuggestions}
+              placeholder="Search..."
+              inputClassName="py-1.5 rounded border-gray-200 text-sm"
+              className="w-64"
+            />
           </div>
         </div>
 
@@ -236,7 +257,7 @@ export function ListRefund() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {refundData.map((refund, index) => (
+              {filteredRefunds.map((refund, index) => (
                 <tr key={refund.id} className={`hover:bg-gray-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                   <td className="px-3 py-3">
                     <input

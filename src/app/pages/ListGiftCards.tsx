@@ -1,4 +1,8 @@
+import { useState } from "react";
+import { SearchAutosuggest } from "../components/ui/SearchAutosuggest";
+
 export function ListGiftCards() {
+  const [search, setSearch] = useState("");
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
       <div className="bg-white rounded border border-gray-300">
@@ -21,10 +25,13 @@ export function ListGiftCards() {
               <span className="text-sm text-gray-600">entries</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Search:</span>
-              <input
-                type="text"
-                className="px-2 py-1 border border-gray-300 rounded text-sm w-48"
+              <SearchAutosuggest
+                value={search}
+                onChange={setSearch}
+                suggestions={[]}
+                placeholder="Search card, customer..."
+                inputClassName="py-1 rounded border-gray-300 text-sm"
+                className="w-48"
               />
             </div>
           </div>

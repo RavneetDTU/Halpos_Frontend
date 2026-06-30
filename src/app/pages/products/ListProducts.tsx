@@ -1,19 +1,20 @@
-import { useState } from "react";
 import {
-  Package,
-  Search,
-  Filter,
-  Download,
-  Eye,
-  Edit2,
-  Trash2,
   AlertTriangle,
   CheckCircle,
-  XCircle,
   ChevronLeft,
   ChevronRight,
+  Download,
+  Edit2,
+  Eye,
+  Filter,
+  Package,
+  Search,
+  Trash2,
+  XCircle,
 } from "lucide-react";
+import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { SearchAutosuggest } from "../../components/ui/SearchAutosuggest";
 
 interface Product {
   id: number;
@@ -48,6 +49,15 @@ function getStockStatus(stock: number): { label: string; color: string } {
   if (stock <= 3) return { label: "Low Stock", color: "bg-orange-100 text-orange-700" };
   return { label: "In Stock", color: "bg-green-100 text-green-700" };
 }
+
+// Suggestions for the search autosuggest – built once from static data
+const productSearchSuggestions = Array.from(
+  new Set([
+    ...mockProducts.map((p) => p.name),
+    ...mockProducts.map((p) => p.sku),
+    ...mockProducts.map((p) => p.brand),
+  ])
+).sort();
 
 export function ListProducts() {
   const { isAdmin } = useAuth();
@@ -125,16 +135,13 @@ export function ListProducts() {
 
       {/* Filters */}
       <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
-          <input
-            type="text"
-            placeholder="Search by name, SKU or brand..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-          />
-        </div>
+        <SearchAutosuggest
+          value={search}
+          onChange={setSearch}
+          suggestions={productSearchSuggestions}
+          placeholder="Search by name, SKU or brand..."
+          className="flex-1 min-w-48"
+        />
         <select
           value={warehouseFilter}
           onChange={(e) => setWarehouseFilter(e.target.value)}
